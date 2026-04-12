@@ -1,0 +1,8 @@
+{
+  "name": "CSR Project Monitoring System",
+  "description": "A professional monitoring application for CSR projects, featuring real-time tracking, geotagged progress reports, and detailed project management for CCL employees and NGOs.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Stores profile information for CCL employees and NGOs",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["CCL_EMPLOYEE", "NGO"] },
+        "name": { "type": "string" },
+        "dob": { "type": "string", "format": "date", "description": "For CCL employees" },
+        "uniqueCode": { "type": "string", "description": "For CCL employees" },
+        "mobile": { "type": "string", "description": "For NGOs" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["uid", "email", "role", "name", "createdAt"]
+    },
+    "Project": {
+      "title": "CSR Project",
+      "description": "Defines a CSR project and its 17 mandatory sections",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED", "PENDING"] },
+        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "expectedCompletionDate": { "type": "number" },
+        "milestones": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "completed": { "type": "boolean" },
+              "date": { "type": "number" }
+            }
+          }
+        },
+        "isGenerated": { "type": "boolean", "description": "True when all 17 sections are complete" },
+        "monitoringStatus": { "type": "string", "enum": ["SECURE", "WARNING", "FRAUD_SUSPECTED"], "description": "Automatic status based on geotags" },
+        "sections": {
+          "type": "object",
+          "properties": {
+            "projectName": { "type": "string" },
+            "applicableSection": { "type": "string" },
+            "timeline": { "type": "string" },
+            "costAndScope": { "type": "string" },
+            "location": { "type": "string" },
+            "primaryBeneficiaries": { "type": "string" },
+            "noOfBeneficiaries": { "type": "number" },
+            "background": { "type": "string" },
+            "objectives": { "type": "string" },
+            "baselineAssessment": { "type": "string" },
+            "implementationPlan": { "type": "string" },
+            "outcome": { "type": "string" },
+            "monitoringMechanism": { "type": "string" },
+            "sustainability": { "type": "string" },
+            "impactAssessmentPlan": { "type": "string" },
+            "otherInfo": { "type": "string" },
+            "benefitsToCompany": { "type": "string" }
+          }
+        },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "name", "status", "createdAt", "updatedAt", "createdBy"]
+    },
+    "ProgressReport": {
+      "title": "Progress Report",
+      "description": "A progress update for a specific project with geotagged data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "date": { "type": "number" },
+        "area": { "type": "string" },
+        "progressText": { "type": "string" },
+        "impactAssessment": { "type": "string" },
+        "geotaggedPhotos": { "type": "array", "items": { "type": "string" } },
+        "location": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
+        "submittedBy": { "type": "string" },
+        "status": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"] }
+      },
+      "required": ["id", "projectId", "date", "area", "progressText", "submittedBy", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents"
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "CSR project documents"
+    },
+    "/projects/{projectId}/reports/{reportId}": {
+      "schema": "ProgressReport",
+      "description": "Progress reports for a specific project"
+    }
+  }
+}

@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - role: string (required, 'CCL_EMPLOYEE')
+    //   - name: string (required)
+    //   - dob: string (optional, date format)
+    //   - uniqueCode: string (optional)
+    //   - mobile: string (optional)
+    //   - createdAt: number (required)
+    //
+    // Collection: /projects/{projectId}
+    // Document ID: Unique string
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - status: string (required, 'ACTIVE' | 'COMPLETED' | 'PENDING')
+    //   - sections: map (required, 17 sections)
+    //   - createdAt: number (required)
+    //   - updatedAt: number (required)
+    //   - createdBy: string (required, userId)
+    //
+    // Collection: /projects/{projectId}/reports/{reportId}
+    // Document ID: Unique string
+    // Fields:
+    //   - id: string (required)
+    //   - projectId: string (required)
+    //   - date: number (required)
+    //   - area: string (required)
+    //   - progressText: string (required)
+    //   - impactAssessment: string (optional)
+    //   - geotaggedPhotos: list (optional)
+    //   - location: map (optional, lat/lng)
+    //   - submittedBy: string (required, userId)
+    //   - status: string (required, 'PENDING' | 'VERIFIED' | 'REJECTED')
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CCL_EMPLOYEE') ||
+          request.auth.token.email == "pratik.20april@gmail.com"
+        );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role == 'CCL_EMPLOYEE' &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.createdAt is number;
+    }
+
+    function isValidProject(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
+             data.status in ['ACTIVE', 'COMPLETED', 'PENDING'] &&
+             data.createdAt is number &&
+             data.updatedAt is number &&
+             data.createdBy is string;
+    }
+
+    function isValidReport(data) {
+      return data.projectId is string &&
+             data.date is number &&
+             data.area is string && data.area.size() > 0 && data.area.size() < 200 &&
+             data.progressText is string && data.progressText.size() > 0 && data.progressText.size() < 5000 &&
+             data.submittedBy is string &&
+             data.status in ['PENDING', 'VERIFIED', 'REJECTED'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) &&
+                    request.resource.data.role == resource.data.role;
+    }
+
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() && isValidProject(request.resource.data);
+      allow update: if isAdmin() && isValidProject(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /{path=**}/reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidReport(request.resource.data) && request.resource.data.submittedBy == request.auth.uid;
+      allow update: if isAdmin() || (isOwner(resource.data.submittedBy) && resource.data.status == 'PENDING' && isValidReport(request.resource.data));
+      allow delete: if isAdmin();
+    }
+  }
+}
