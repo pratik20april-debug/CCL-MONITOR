@@ -23,8 +23,61 @@ import {
   Line
 } from 'recharts';
 import { cn } from '@/src/lib/utils';
-import { db, handleFirestoreError, OperationType } from '@/src/firebase';
+import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, onSnapshot, collectionGroup, query, orderBy, limit } from 'firebase/firestore';
+import { AppContext } from '../App';
+import { Languages, Globe } from 'lucide-react';
+
+const translations = {
+  en: {
+    welcome: "Central Coalfields Limited",
+    vision: "Our Vision",
+    mission: "Our Mission",
+    philosophy: "CSR Philosophy",
+    visionText: "To emerge as a world-class, socially responsible energy company, committed to sustainable development and excellence in mining.",
+    missionText: "To produce and market the planned quantity of coal and coal products efficiently and economically in an eco-friendly manner with due regard to safety, conservation and quality.",
+    philosophyText: "CCL's CSR initiatives are focused on the socio-economic development of the community, particularly in the coal mining areas of Jharkhand.",
+    explore: "EXPLORE CSR PORTAL",
+    website: "COAL INDIA WEBSITE",
+    activeProjects: "Active Projects",
+    completed: "Completed",
+    reports: "Reports Filed",
+    beneficiaries: "Beneficiaries",
+    distribution: "Project Distribution",
+    growth: "Impact Growth",
+    operations: "Recent Field Operations",
+    searchPlaceholder: "Search for projects, reports, or guidance...",
+    helpTitle: "Help & Support",
+    helpDesc: "Need assistance? Explore our guides or contact support.",
+    guide: "User Guide",
+    faq: "FAQs",
+    contact: "Contact Support"
+  },
+  hi: {
+    welcome: "सेंट्रल कोलफील्ड्स लिमिटेड",
+    vision: "हमारा दृष्टिकोण",
+    mission: "हमारा लक्ष्य",
+    philosophy: "सीएसआर दर्शन",
+    visionText: "एक विश्व स्तरीय, सामाजिक रूप से जिम्मेदार ऊर्जा कंपनी के रूप में उभरना, जो खनन में सतत विकास और उत्कृष्टता के लिए प्रतिबद्ध है।",
+    missionText: "नियोजित मात्रा में कोयले और कोयला उत्पादों का कुशलतापूर्वक और आर्थिक रूप से पर्यावरण के अनुकूल तरीके से उत्पादन और विपणन करना।",
+    philosophyText: "सीसीएल की सीएसआर पहल समुदाय के सामाजिक-आर्थिक विकास पर केंद्रित है, विशेष रूप से झारखंड के कोयला खनन क्षेत्रों में।",
+    explore: "सीएसआर पोर्टल खोजें",
+    website: "कोल इंडिया वेबसाइट",
+    activeProjects: "सक्रिय परियोजनाएं",
+    completed: "पूरा हुआ",
+    reports: "दायर रिपोर्ट",
+    beneficiaries: "लाभार्थी",
+    distribution: "परियोजना वितरण",
+    growth: "प्रभाव वृद्धि",
+    operations: "हाल के क्षेत्र संचालन",
+    searchPlaceholder: "परियोजनाओं, रिपोर्टों या मार्गदर्शन के लिए खोजें...",
+    helpTitle: "सहायता और समर्थन",
+    helpDesc: "सहायता चाहिए? हमारे गाइड देखें या समर्थन से संपर्क करें।",
+    guide: "उपयोगकर्ता गाइड",
+    faq: "सामान्य प्रश्न",
+    contact: "सहायता से संपर्क करें"
+  }
+};
 
 const chartData = [
   { name: 'Jan', projects: 4, impact: 2400 },
@@ -36,24 +89,25 @@ const chartData = [
 ];
 
 const StatCard = ({ title, value, icon: Icon, trend }: any) => (
-  <Card className="overflow-hidden border border-border/50 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 group">
+  <Card className="overflow-hidden border border-border/50 shadow-sm bg-card/40 backdrop-blur-xl hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-500 group relative">
+    <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
     <CardContent className="p-8">
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
-          <h3 className="text-4xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors">{value}</h3>
+        <div className="space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/70">{title}</p>
+          <h3 className="text-4xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors duration-500">{value}</h3>
           {trend !== undefined && (
             <div className={cn(
-              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold",
-              trend > 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider",
+              trend > 0 ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
             )}>
-              <TrendingUp size={10} />
+              <TrendingUp size={12} className={cn(trend < 0 && "rotate-180")} />
               {trend > 0 ? '+' : ''}{trend}%
             </div>
           )}
         </div>
-        <div className="w-14 h-14 bg-primary/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 rotate-3 group-hover:rotate-0 shadow-inner">
-          <Icon size={28} />
+        <div className="w-16 h-16 bg-primary/5 rounded-[1.5rem] flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-700 shadow-inner group-hover:shadow-xl group-hover:shadow-primary/20">
+          <Icon size={32} />
         </div>
       </div>
     </CardContent>
@@ -61,6 +115,8 @@ const StatCard = ({ title, value, icon: Icon, trend }: any) => (
 );
 
 export default function Home() {
+  const { language, setLanguage } = React.useContext(AppContext);
+  const t = translations[language];
   const [stats, setStats] = React.useState({
     totalProjects: 0,
     activeProjects: 0,
@@ -71,9 +127,11 @@ export default function Home() {
   const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
 
   React.useEffect(() => {
+    if (!auth.currentUser) return;
+
     const unsubProjects = onSnapshot(collection(db, 'projects'), (snapshot) => {
-      const projects = snapshot.docs.map(doc => doc.data());
-      const active = projects.filter(p => p.status === 'ACTIVE');
+      const projects = snapshot.docs.map(doc => doc.data()).filter(p => !p.isEliminated);
+      const active = projects.filter(p => p.status === 'ONGOING' || p.status === 'ACTIVE');
       
       const beneficiaries = active.reduce((acc, p) => {
         const count = parseInt(p.sections?.noOfBeneficiaries || '0');
@@ -101,124 +159,141 @@ export default function Home() {
     });
 
     const unsubRecentReports = onSnapshot(query(collectionGroup(db, 'reports'), orderBy('date', 'desc'), limit(5)), (snapshot) => {
-      setRecentActivities(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const reports = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        type: 'REPORT',
+        timestamp: doc.data().date,
+        ...doc.data() 
+      }));
+      setRecentActivities(prev => {
+        const combined = [...reports, ...prev.filter(a => a.type === 'STATUS_UPDATE')]
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 8);
+        return combined;
+      });
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'reports');
+    });
+
+    const unsubRecentProjects = onSnapshot(query(collection(db, 'projects'), orderBy('updatedAt', 'desc'), limit(5)), (snapshot) => {
+      const updates = snapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        type: 'STATUS_UPDATE',
+        timestamp: doc.data().updatedAt || doc.data().createdAt || Date.now(),
+        ...doc.data() 
+      }));
+      setRecentActivities(prev => {
+        const combined = [...updates, ...prev.filter(a => a.type === 'REPORT')]
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 8);
+        return combined;
+      });
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'projects');
     });
 
     return () => {
       unsubProjects();
       unsubReportsCount();
       unsubRecentReports();
+      unsubRecentProjects();
     };
   }, []);
 
   return (
     <div className="space-y-10 pb-20 neo-blur">
+      {/* Top Bar: Language */}
+      <div className="flex justify-end">
+        <div className="flex bg-card/50 backdrop-blur-xl p-1.5 rounded-2xl border border-border/50 shadow-lg">
+          <button 
+            onClick={() => setLanguage('en')}
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all",
+              language === 'en' ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Globe size={16} /> ENGLISH
+          </button>
+          <button 
+            onClick={() => setLanguage('hi')}
+            className={cn(
+              "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-black transition-all",
+              language === 'hi' ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <Languages size={16} /> हिन्दी
+          </button>
+        </div>
+      </div>
+
       {/* Hero Section: Vision, Mission & CSR */}
-      <Card className="border border-border/50 shadow-2xl bg-primary text-primary-foreground overflow-hidden relative">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/10 rounded-full -mr-64 -mt-64 blur-[100px] animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-black/20 rounded-full -ml-64 -mb-64 blur-[100px]" />
+      <Card className="border border-border/50 shadow-2xl bg-primary text-primary-foreground overflow-hidden relative min-h-[500px] flex items-center">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/10 rounded-full -mr-64 -mt-64 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-black/20 rounded-full -ml-64 -mb-64 blur-[120px]" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
         
-        <CardContent className="p-10 lg:p-16 relative">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-7 space-y-8">
-              <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-white rounded-3xl p-4 shadow-2xl flex items-center justify-center overflow-hidden rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <img 
-                    src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Central_Coalfields_Limited_Logo.svg/512px-Central_Coalfields_Limited_Logo.svg.png" 
-                    alt="CCL Logo" 
-                    className="w-full h-full object-contain"
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://www.coalindia.in/media/images/ccl.png';
-                    }}
-                  />
-                </div>
-                <div>
-                  <Badge className="bg-white/20 text-white border-none mb-2 px-3 py-1 text-[10px] font-black tracking-[0.2em] uppercase">Miniratna Category-I</Badge>
-                  <h1 className="text-4xl lg:text-6xl font-black tracking-tighter leading-none">
-                    Central Coalfields <br />
-                    <span className="text-white/70">Limited</span>
-                  </h1>
-                </div>
-              </div>
+        <CardContent className="p-10 lg:p-20 relative w-full">
+          <div className="max-w-4xl mx-auto text-center space-y-12">
+            <div className="space-y-6">
+              <Badge className="bg-white/20 text-white border-none px-4 py-1.5 text-[12px] font-black tracking-[0.3em] uppercase mb-4">Miniratna Category-I Company</Badge>
+              <h1 className="text-5xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-white">
+                {t.welcome}
+              </h1>
+              <p className="text-xl lg:text-2xl font-medium text-white/80 max-w-2xl mx-auto leading-relaxed">
+                {t.philosophyText}
+              </p>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                <div className="space-y-3 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    Our Vision
-                  </h4>
-                  <p className="text-lg font-bold leading-tight italic">
-                    "To emerge as a world-class, socially responsible energy company, committed to sustainable development and excellence in mining."
-                  </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
+              <div className="space-y-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 text-left group">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:bg-white group-hover:text-primary transition-colors">
+                  <Activity size={20} />
                 </div>
-                <div className="space-y-3 p-6 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-colors">
-                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                    Our Mission
-                  </h4>
-                  <p className="text-sm font-medium leading-relaxed">
-                    To produce and market the planned quantity of coal and coal products efficiently and economically in an eco-friendly manner with due regard to safety, conservation and quality.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-white rounded-full" />
-                  CSR Philosophy
+                <h4 className="text-sm font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
+                  {t.vision}
                 </h4>
-                <p className="text-lg font-medium leading-relaxed text-white/90">
-                  CCL's CSR initiatives are focused on the socio-economic development of the community, 
-                  particularly in the coal mining areas of Jharkhand. We strive to improve the quality 
-                  of life through strategic interventions in education, healthcare, and infrastructure.
+                <p className="text-lg font-bold leading-tight italic text-white/90">
+                  "{t.visionText}"
                 </p>
               </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <Button 
-                  className="h-14 px-8 bg-white text-primary hover:bg-white/90 font-black text-sm tracking-tight rounded-2xl shadow-2xl group"
-                  onClick={() => window.open('https://www.coalindia.in/csr/', '_blank')}
-                >
-                  EXPLORE CSR PORTAL
-                  <TrendingUp size={18} className="ml-2 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                </Button>
-                <Button 
-                  variant="outline"
-                  className="h-14 px-8 border-white/20 text-white hover:bg-white/10 font-black text-sm tracking-tight rounded-2xl backdrop-blur-md"
-                  onClick={() => window.open('https://www.coalindia.in/', '_blank')}
-                >
-                  COAL INDIA WEBSITE
-                </Button>
+              <div className="space-y-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 text-left group">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:bg-white group-hover:text-primary transition-colors">
+                  <TrendingUp size={20} />
+                </div>
+                <h4 className="text-sm font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
+                  {t.mission}
+                </h4>
+                <p className="text-base font-medium leading-relaxed text-white/80">
+                  {t.missionText}
+                </p>
               </div>
             </div>
 
-            <div className="lg:col-span-5 hidden lg:block">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary to-transparent z-10 rounded-[3rem]" />
-                <img 
-                  src="https://picsum.photos/seed/mining/800/1000" 
-                  alt="Mining Operations" 
-                  className="rounded-[3rem] shadow-2xl object-cover h-[600px] w-full grayscale hover:grayscale-0 transition-all duration-1000"
-                  referrerPolicy="no-referrer"
-                />
-                <div className="absolute bottom-8 left-8 z-20 space-y-2">
-                  <p className="text-6xl font-black tracking-tighter">50+</p>
-                  <p className="text-xs font-black uppercase tracking-[0.3em] opacity-70">Years of Excellence</p>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+              <Button 
+                className="h-16 px-10 bg-white text-primary hover:bg-white/90 font-black text-base tracking-tight rounded-2xl shadow-2xl group"
+                onClick={() => window.open('https://www.coalindia.in/csr/', '_blank')}
+              >
+                {t.explore}
+                <Briefcase size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button 
+                variant="outline"
+                className="h-16 px-10 border-white/20 text-white hover:bg-white/10 font-black text-base tracking-tight rounded-2xl backdrop-blur-md"
+                onClick={() => window.open('https://www.coalindia.in/', '_blank')}
+              >
+                {t.website}
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        <StatCard title="Active Projects" value={stats.activeProjects.toString()} icon={Briefcase} trend={12} />
-        <StatCard title="Completed" value={stats.completedProjects.toString()} icon={CheckCircle2} trend={5} />
-        <StatCard title="Reports Filed" value={stats.totalReports.toString()} icon={FileText} trend={18} />
-        <StatCard title="Beneficiaries" value={stats.totalBeneficiaries.toLocaleString()} icon={Users} trend={24} />
+        <StatCard title={t.activeProjects} value={stats.activeProjects.toString()} icon={Briefcase} trend={12} />
+        <StatCard title={t.completed} value={stats.completedProjects.toString()} icon={CheckCircle2} trend={5} />
+        <StatCard title={t.reports} value={stats.totalReports.toString()} icon={FileText} trend={18} />
+        <StatCard title={t.beneficiaries} value={stats.totalBeneficiaries.toLocaleString()} icon={Users} trend={24} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
@@ -227,7 +302,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full" />
-                Project Distribution
+                {t.distribution}
               </CardTitle>
               <Badge variant="outline" className="font-mono text-[10px]">REAL-TIME DATA</Badge>
             </div>
@@ -253,7 +328,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full" />
-                Impact Growth
+                {t.growth}
               </CardTitle>
               <Badge variant="outline" className="font-mono text-[10px]">MONTHLY TREND</Badge>
             </div>
@@ -281,39 +356,49 @@ export default function Home() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <Card className="lg:col-span-2 border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
+      <div className="grid grid-cols-1 gap-10">
+        <Card className="border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
             <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
               <div className="w-2 h-2 bg-primary rounded-full" />
-              Recent Field Operations
+              {t.operations}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-border/50">
               {recentActivities.length > 0 ? recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center gap-6 p-6 hover:bg-primary/5 transition-all duration-300 group">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500">
-                    <FileText size={24} />
+                <div key={activity.id} className="flex items-center gap-6 p-8 hover:bg-primary/[0.02] transition-all duration-500 group relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500" />
+                  <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-700 shadow-inner">
+                    {activity.type === 'REPORT' ? <FileText size={28} /> : <Activity size={28} />}
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <p className="font-black text-foreground text-lg tracking-tight">Progress update for {activity.area}</p>
-                      <span className="text-[10px] font-mono text-muted-foreground uppercase bg-muted px-2 py-0.5 rounded-md">
-                        {new Date(activity.date).toLocaleDateString()}
-                      </span>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-4">
+                      <p className="font-black text-foreground text-xl tracking-tight group-hover:text-primary transition-colors">
+                        {activity.type === 'REPORT' 
+                          ? `Progress update for ${activity.area}` 
+                          : `Status change for ${activity.title || activity.sections?.projectTitle || 'Project'}`}
+                      </p>
+                      <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-muted/50">
+                        {new Date(activity.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-1 font-medium">
-                      {activity.progressText}
+                    <p className="text-sm text-muted-foreground line-clamp-1 font-medium leading-relaxed max-w-3xl">
+                      {activity.type === 'REPORT' 
+                        ? activity.progressText 
+                        : `Current Status: ${activity.status}`}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <Badge variant="outline" className={cn(
-                      "font-mono text-[10px] px-3 py-1 rounded-full",
-                      activity.status === 'VERIFIED' ? "text-green-500 border-green-500/20 bg-green-500/5" : "text-yellow-500 border-yellow-500/20 bg-yellow-500/5"
+                  <div className="text-right flex flex-col items-end gap-2">
+                    <Badge className={cn(
+                      "font-black text-[10px] px-4 py-1.5 rounded-full border-none shadow-sm",
+                      activity.status === 'VERIFIED' || activity.status === 'ONGOING' || activity.status === 'COMPLETED' 
+                        ? "bg-green-500 text-white" 
+                        : "bg-yellow-500 text-white"
                     )}>
                       {activity.status}
                     </Badge>
+                    <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-tighter">Ref: {activity.id.slice(0, 8)}</span>
                   </div>
                 </div>
               )) : (

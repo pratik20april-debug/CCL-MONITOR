@@ -14,11 +14,14 @@ export interface UserProfile {
 export interface Project {
   id: string;
   name: string;
-  status: 'ACTIVE' | 'COMPLETED' | 'PENDING';
+  status: 'INCOMPLETE' | 'ONGOING' | 'DELAYED' | 'COMPLETED' | 'PENDING';
   sections: ProjectSections;
   createdAt: number;
   updatedAt: number;
   createdBy: string;
+  isEliminated?: boolean;
+  eliminatedAt?: number;
+  restoredAt?: number;
 }
 
 export interface ProjectSections {

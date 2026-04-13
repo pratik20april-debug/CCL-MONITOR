@@ -1,12 +1,43 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, doc, getDocFromServer, enableMultiTabIndexedDbPersistence, enableIndexedDbPersistence } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 // Initialize Firebase SDK
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+
+// Enable Offline Persistence
+let persistenceEnabled = false;
+export const enableOffline = async () => {
+  if (persistenceEnabled) return true;
+  
+  try {
+    try {
+      await enableMultiTabIndexedDbPersistence(db);
+      console.log("Multi-tab offline persistence enabled");
+      persistenceEnabled = true;
+    } catch (multiTabErr: any) {
+      await enableIndexedDbPersistence(db);
+      console.log("Single-tab offline persistence enabled");
+      persistenceEnabled = true;
+    }
+    
+    // Test connection after enabling persistence
+    await testConnection();
+    return true;
+  } catch (err: any) {
+    if (err.code === 'failed-precondition') {
+      console.warn("Persistence failed: Multiple tabs open");
+    } else if (err.code === 'unimplemented') {
+      console.warn("Persistence failed: Browser not supported");
+    } else {
+      console.error("Persistence error:", err);
+    }
+    return false;
+  }
+};
 
 // Validate Connection to Firestore
 async function testConnection() {
@@ -18,11 +49,10 @@ async function testConnection() {
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.error("Firebase connection failed: The client is offline. Please check your configuration.");
     }
-    // Other errors (like 404) are expected for a non-existent doc and mean we ARE connected
+    // Other errors (like 404 or permission denied on this specific path) are expected 
+    // and mean we ARE connected to the server
   }
 }
-
-testConnection();
 
 export enum OperationType {
   CREATE = 'create',

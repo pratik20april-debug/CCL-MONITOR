@@ -23,7 +23,7 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED", "PENDING"] },
+        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED", "PENDING", "ONGOING", "DELAYED", "INCOMPLETE"] },
         "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
         "expectedCompletionDate": { "type": "number" },
         "milestones": {

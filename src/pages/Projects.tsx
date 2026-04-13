@@ -163,13 +163,16 @@ export default function Projects() {
   };
 
   React.useEffect(() => {
+    if (!auth.currentUser) return;
+    
     const q = query(collection(db, 'projects'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const projectsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
-      setProjects(projectsData);
+      // Filter out eliminated and completed projects
+      setProjects(projectsData.filter((p: any) => !p.isEliminated && p.status !== 'COMPLETED'));
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'projects');
@@ -187,9 +190,9 @@ export default function Projects() {
     try {
       await addDoc(collection(db, 'projects'), {
         name: newProjectName,
-        status: 'PENDING',
+        status: 'INCOMPLETE',
         isGenerated: false,
-        monitoringStatus: 'WARNING',
+        monitoringStatus: 'PENDING',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         createdBy: auth.currentUser?.uid,
@@ -211,11 +214,15 @@ export default function Projects() {
     if (!projectToDelete) return;
     
     try {
-      await deleteDoc(doc(db, 'projects', projectToDelete));
-      toast.success("Project deleted successfully");
+      await updateDoc(doc(db, 'projects', projectToDelete), {
+        isEliminated: true,
+        eliminatedAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      toast.success("Project moved to Eliminated Projects (Recycle Bin)");
       setProjectToDelete(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `projects/${projectToDelete}`);
+      handleFirestoreError(error, OperationType.UPDATE, `projects/${projectToDelete}`);
     }
   };
 
@@ -248,10 +255,11 @@ export default function Projects() {
     try {
       await updateDoc(doc(db, 'projects', selectedProject.id), {
         isGenerated: true,
-        status: 'ACTIVE',
+        status: 'ONGOING',
+        monitoringStatus: 'SECURE',
         updatedAt: Date.now()
       });
-      toast.success("Project Generated Successfully! It is now active.");
+      toast.success("Project Generated Successfully! It is now ongoing.");
       setIsViewMode(true);
       setSelectedProject({ ...selectedProject, isGenerated: true });
     } catch (error) {
@@ -628,14 +636,14 @@ export default function Projects() {
       <Dialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Project</DialogTitle>
+            <DialogTitle>Move to Eliminated Projects</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this project? This action cannot be undone and all associated reports will be orphaned.
+              Are you sure you want to eliminate this project? It will be moved to the Eliminated Projects section (Recycle Bin) where it can be restored or permanently deleted.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setProjectToDelete(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteProject}>Delete Project</Button>
+            <Button variant="destructive" onClick={handleDeleteProject}>Eliminate Project</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

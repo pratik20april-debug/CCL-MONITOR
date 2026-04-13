@@ -31,8 +31,10 @@ export default function Settings() {
     customHtml, setCustomHtml,
     fontSize, setFontSize,
     fontStyle, setFontStyle,
-    themeColor, setThemeColor
+    themeColor, setThemeColor,
+    offlineMode, setOfflineMode
   } = React.useContext(AppContext);
+
   const [localHtml, setLocalHtml] = React.useState(customHtml || '<!-- Add your custom HTML/JS here for new features -->\n<div id="custom-feature" style="padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">\n  <h4 style="color: #1e293b; font-weight: bold;">Custom Widget</h4>\n  <p style="color: #64748b; font-size: 14px;">This is a developer-injected feature.</p>\n</div>');
 
   const handleUpdate = () => {
@@ -51,19 +53,33 @@ export default function Settings() {
     toast.success("Custom code deployed successfully!");
   };
 
+  const toggleOffline = () => {
+    setOfflineMode(!offlineMode);
+    if (!offlineMode) {
+      toast.success("Power Mode Enabled: Application will now work offline!");
+    } else {
+      toast.info("Power Mode Disabled: Online connection required for data sync.");
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* App Info */}
+        {/* App Info & About */}
         <Card className="border-none shadow-sm overflow-hidden bg-card">
           <CardHeader className="bg-primary/5 pb-6">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground mb-4 shadow-lg">
               <Info size={24} />
             </div>
-            <CardTitle>App Information</CardTitle>
-            <CardDescription>System details and versioning</CardDescription>
+            <CardTitle>About CSR Monitor</CardTitle>
+            <CardDescription>General description and system details</CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border/50 mb-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                The <span className="font-bold text-foreground">CCL CSR Monitor</span> is a state-of-the-art management portal designed for Central Coalfields Limited. It enables real-time tracking of Corporate Social Responsibility projects, advanced geospatial analysis, and comprehensive impact assessment across Jharkhand's mining regions.
+              </p>
+            </div>
             <div className="flex justify-between py-2 border-b border-border">
               <span className="text-muted-foreground">Version</span>
               <span className="font-mono font-bold">1.2.4-stable</span>
@@ -76,12 +92,58 @@ export default function Settings() {
             </div>
             <div className="flex justify-between py-2">
               <span className="text-muted-foreground">Last Updated</span>
-              <span className="text-foreground">April 11, 2026</span>
+              <span className="text-foreground">April 13, 2026</span>
             </div>
             <Button onClick={handleUpdate} variant="outline" className="w-full gap-2 mt-4">
               <RefreshCw size={16} />
               Check for Updates
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Power Features (Offline Mode) */}
+        <Card className="border-none shadow-sm overflow-hidden bg-card">
+          <CardHeader className="bg-orange-500/5 pb-6">
+            <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center text-white mb-4 shadow-lg">
+              <Zap size={24} />
+            </div>
+            <CardTitle>Power Mode</CardTitle>
+            <CardDescription>Offline capabilities and performance</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-base">Offline Access</Label>
+                <p className="text-sm text-muted-foreground">Run application completely without internet</p>
+              </div>
+              <div className="flex bg-muted p-1 rounded-lg">
+                <button 
+                  onClick={() => setOfflineMode(false)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    !offlineMode ? "bg-background shadow-sm text-orange-600" : "text-muted-foreground"
+                  )}
+                >
+                  Online
+                </button>
+                <button 
+                  onClick={() => setOfflineMode(true)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    offlineMode ? "bg-orange-500 text-white shadow-md" : "text-muted-foreground"
+                  )}
+                >
+                  Offline
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
+              <p className="text-xs text-orange-700 font-medium leading-relaxed">
+                <span className="font-black uppercase tracking-widest block mb-1">How it works:</span>
+                When enabled, the application caches all project data and map tiles locally. You can continue to view projects, add reports, and use Geo Tracking even in remote mining areas with zero connectivity. Data will sync automatically once you return to a network.
+              </p>
+            </div>
           </CardContent>
         </Card>
 

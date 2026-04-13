@@ -5,11 +5,12 @@ import AuthTabs from './components/auth/AuthTabs';
 import Home from './pages/Home';
 import Projects from './pages/Projects';
 import ProgressReport from './pages/ProgressReport';
-import GPSTracking from './pages/GPSTracking';
-import ProjectApproval from './pages/ProjectApproval';
+import ProjectStatus from './pages/ProjectStatus';
+import CompletedProjects from './pages/CompletedProjects';
+import EliminatedProjects from './pages/EliminatedProjects';
 import Settings from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth, db } from './firebase';
+import { auth, db, enableOffline } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -26,6 +27,10 @@ export const AppContext = React.createContext<{
   setFontStyle: (val: string) => void;
   themeColor: string;
   setThemeColor: (val: string) => void;
+  offlineMode: boolean;
+  setOfflineMode: (val: boolean) => void;
+  language: 'en' | 'hi';
+  setLanguage: (val: 'en' | 'hi') => void;
 }>({
   advancedMode: false,
   setAdvancedMode: () => {},
@@ -37,6 +42,10 @@ export const AppContext = React.createContext<{
   setFontStyle: () => {},
   themeColor: 'blue',
   setThemeColor: () => {},
+  offlineMode: false,
+  setOfflineMode: () => {},
+  language: 'en',
+  setLanguage: () => {},
 });
 
 export default function App() {
@@ -48,6 +57,22 @@ export default function App() {
   const [fontSize, setFontSize] = React.useState('medium');
   const [fontStyle, setFontStyle] = React.useState('sans');
   const [themeColor, setThemeColor] = React.useState('blue');
+  const [offlineMode, setOfflineMode] = React.useState(localStorage.getItem('offlineMode') === 'true');
+  const [language, setLanguage] = React.useState<'en' | 'hi'>((localStorage.getItem('language') as 'en' | 'hi') || 'en');
+
+  React.useEffect(() => {
+    const initOffline = async () => {
+      if (offlineMode) {
+        await enableOffline();
+      }
+    };
+    initOffline();
+    localStorage.setItem('offlineMode', offlineMode.toString());
+  }, [offlineMode]);
+
+  React.useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
 
   React.useEffect(() => {
     // Apply font size and style to body
@@ -85,10 +110,12 @@ export default function App() {
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
+            const userData = userDoc.data();
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              ...userDoc.data()
+              ...userData,
+              role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : userData.role
             });
           } else {
             // This might happen if registration failed halfway
@@ -96,7 +123,7 @@ export default function App() {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               name: firebaseUser.displayName || 'User',
-              role: 'CCL_EMPLOYEE' // Default fallback
+              role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : 'CCL_EMPLOYEE'
             });
           }
         } catch (error) {
@@ -105,7 +132,7 @@ export default function App() {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             name: 'User',
-            role: 'CCL_EMPLOYEE'
+            role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : 'CCL_EMPLOYEE'
           });
         }
       } else {
@@ -140,7 +167,7 @@ export default function App() {
         role: 'ADMIN',
         isSuperAdmin: true
       });
-      setLoading(false);
+      toast.success("Super Admin access granted!");
     }
   };
 
@@ -172,18 +199,6 @@ export default function App() {
             className="hidden lg:block space-y-6"
           >
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl p-2 overflow-hidden">
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Central_Coalfields_Limited_Logo.svg/512px-Central_Coalfields_Limited_Logo.svg.png" 
-                  alt="CCL Logo" 
-                  className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://www.coalindia.in/media/images/ccl.png';
-                  }}
-                />
-              </div>
-              <div className="h-12 w-px bg-slate-200" />
               <div className="text-primary font-black text-2xl tracking-tighter">CCL</div>
             </div>
             <h1 className="text-5xl font-bold tracking-tight text-slate-900 leading-tight">
@@ -230,7 +245,9 @@ export default function App() {
         customHtml, setCustomHtml,
         fontSize, setFontSize,
         fontStyle, setFontStyle,
-        themeColor, setThemeColor
+        themeColor, setThemeColor,
+        offlineMode, setOfflineMode,
+        language, setLanguage
       }}>
         <DashboardLayout 
           activeTab={activeTab} 
@@ -250,8 +267,9 @@ export default function App() {
               {activeTab === 'home' && <Home />}
               {activeTab === 'projects' && <Projects />}
               {activeTab === 'reports' && <ProgressReport />}
-              {activeTab === 'tracking' && <GPSTracking />}
-              {activeTab === 'approval' && <ProjectApproval />}
+              {activeTab === 'status' && <ProjectStatus />}
+              {activeTab === 'completed' && <CompletedProjects />}
+              {activeTab === 'eliminated' && <EliminatedProjects />}
               {activeTab === 'settings' && <Settings />}
             </motion.div>
           </AnimatePresence>

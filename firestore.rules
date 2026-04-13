@@ -28,6 +28,9 @@ service cloud.firestore {
     //   - createdAt: number (required)
     //   - updatedAt: number (required)
     //   - createdBy: string (required, userId)
+    //   - isEliminated: bool (optional)
+    //   - eliminatedAt: number (optional)
+    //   - restoredAt: number (optional)
     //
     // Collection: /projects/{projectId}/reports/{reportId}
     // Document ID: Unique string
@@ -60,9 +63,11 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         (
+          request.auth.token.email == "pratik.20april@gmail.com" ||
+          request.auth.token.email == "prat@ccl.gov.in" ||
+          request.auth.token.email == "admin@ccl.gov.in" ||
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'CCL_EMPLOYEE') ||
-          request.auth.token.email == "pratik.20april@gmail.com"
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN')
         );
     }
 
@@ -70,21 +75,9 @@ service cloud.firestore {
       return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
-    function hasOnlyAllowedFields(fields) {
-      return request.resource.data.keys().hasOnly(fields);
-    }
-
-    function isValidUser(data) {
-      return data.uid is string && data.uid == request.auth.uid &&
-             data.email is string && isValidEmail(data.email) &&
-             data.role == 'CCL_EMPLOYEE' &&
-             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.createdAt is number;
-    }
-
     function isValidProject(data) {
       return data.name is string && data.name.size() > 0 && data.name.size() < 200 &&
-             data.status in ['ACTIVE', 'COMPLETED', 'PENDING'] &&
+             data.status in ['ACTIVE', 'COMPLETED', 'PENDING', 'ONGOING', 'DELAYED', 'INCOMPLETE'] &&
              data.createdAt is number &&
              data.updatedAt is number &&
              data.createdBy is string;
@@ -103,24 +96,43 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email == request.auth.token.email &&
+             data.role in ['CCL_EMPLOYEE', 'ADMIN'] &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100;
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data);
       allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) &&
-                    request.resource.data.role == resource.data.role;
+                    request.resource.data.role == resource.data.role &&
+                    request.resource.data.createdAt == resource.data.createdAt;
     }
 
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() && isValidProject(request.resource.data);
-      allow update: if isAdmin() && isValidProject(request.resource.data);
+      allow create: if isAdmin() && isValidProject(request.resource.data) && 
+                    request.resource.data.createdBy == request.auth.uid;
+      allow update: if isAdmin() && isValidProject(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt &&
+                    request.resource.data.createdBy == resource.data.createdBy;
       allow delete: if isAdmin();
     }
 
     match /{path=**}/reports/{reportId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidReport(request.resource.data) && request.resource.data.submittedBy == request.auth.uid;
-      allow update: if isAdmin() || (isOwner(resource.data.submittedBy) && resource.data.status == 'PENDING' && isValidReport(request.resource.data));
+      allow create: if isAuthenticated() && isValidReport(request.resource.data) && 
+                    request.resource.data.submittedBy == request.auth.uid;
+      allow update: if (isAdmin() && isValidReport(request.resource.data) && 
+                        request.resource.data.submittedBy == resource.data.submittedBy &&
+                        request.resource.data.projectId == resource.data.projectId) || 
+                    (isOwner(resource.data.submittedBy) && resource.data.status == 'PENDING' && 
+                     isValidReport(request.resource.data) &&
+                     request.resource.data.status == 'PENDING' &&
+                     request.resource.data.submittedBy == resource.data.submittedBy &&
+                     request.resource.data.projectId == resource.data.projectId);
       allow delete: if isAdmin();
     }
   }

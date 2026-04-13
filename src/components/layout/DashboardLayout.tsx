@@ -4,12 +4,14 @@ import {
   LayoutDashboard, 
   Briefcase, 
   FileText, 
-  MapPin, 
+  Map as MapIcon, 
   LogOut, 
   Menu,
   X,
-  CheckCircle,
-  Settings as SettingsIcon
+  Activity,
+  CheckCircle2,
+  Settings as SettingsIcon,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { cn } from '@/src/lib/utils';
@@ -58,9 +60,10 @@ export default function DashboardLayout({
     { id: 'home', label: 'Home', icon: LayoutDashboard },
     { id: 'projects', label: 'Projects', icon: Briefcase },
     { id: 'reports', label: 'Progress Report', icon: FileText },
-    { id: 'tracking', label: 'GPS Tracking', icon: MapPin },
-    { id: 'approval', label: 'Project Approval', icon: CheckCircle, role: 'ADMIN' },
+    { id: 'status', label: 'Project Status', icon: Activity, role: 'ADMIN' },
+    { id: 'completed', label: 'Completed Projects', icon: CheckCircle2, role: 'ADMIN' },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2, role: 'ADMIN' },
   ].filter(item => !item.role || item.role === userRole);
 
   return (
@@ -78,17 +81,6 @@ export default function DashboardLayout({
               animate={{ opacity: 1 }}
               className="flex items-center gap-3"
             >
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 rotate-3 overflow-hidden p-1.5">
-                <img 
-                  src="https://upload.wikimedia.org/wikipedia/en/thumb/5/5f/Central_Coalfields_Limited_Logo.svg/512px-Central_Coalfields_Limited_Logo.svg.png" 
-                  alt="CCL Logo" 
-                  className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://www.coalindia.in/media/images/ccl.png';
-                  }}
-                />
-              </div>
               <span className="font-black text-xl tracking-tighter text-foreground">CSR MONITOR</span>
             </motion.div>
           )}

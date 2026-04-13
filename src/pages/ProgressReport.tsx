@@ -36,10 +36,13 @@ export default function ProgressReport() {
   };
 
   React.useEffect(() => {
+    if (!auth.currentUser) return;
+
     // Fetch projects for dropdown
     const qProjects = query(collection(db, 'projects'));
     const unsubProjects = onSnapshot(qProjects, (snapshot) => {
-      setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const projectsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProjects(projectsData.filter((p: any) => !p.isEliminated));
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'projects');
     });
@@ -261,7 +264,7 @@ export default function ProgressReport() {
                   Geotagging Required
                 </div>
                 <p className="text-xs text-yellow-700">
-                  Please upload geotagged photos in the GPS Tracking section to secure the monitoring status.
+                  Please upload geotagged photos with your report to ensure the project monitoring status remains secure.
                 </p>
               </div>
 
