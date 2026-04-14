@@ -1,10 +1,10 @@
 {
   "name": "CCL Monitor",
-  "short_name": "CCL",
-  "start_url": "/",
+  "short_name": "CCL MONITOR",
+  "start_url": "/login.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a",
+  "theme_color": "#0f142a",
   "orientation": "portrait",
   "icons": [
     {
@@ -17,5 +17,21 @@
       "sizes": "512x512",
       "type": "image/png"
     }
+  ],
+  "dir": "ltr",
+  "lang": "en",
+  "display_override": [
+    "browser",
+    "fullscreen",
+    "window-controls-overlay",
+    "minimal-ui",
+    "standalone"
+  ],
+  "scope": "\"scope\" : \" / \"",
+  "categories": [
+    "business",
+    "government",
+    "navigation",
+    "security"
   ]
 }
