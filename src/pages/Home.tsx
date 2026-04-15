@@ -9,8 +9,11 @@ import {
   TrendingUp,
   FileText,
   Users,
-  Activity
+  Activity,
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { 
   BarChart, 
   Bar, 
@@ -160,36 +163,40 @@ export default function Home() {
       handleFirestoreError(error, OperationType.LIST, 'reports');
     });
 
-    const unsubRecentReports = onSnapshot(query(collectionGroup(db, 'reports'), orderBy('date', 'desc'), limit(5)), (snapshot) => {
-      const reports = snapshot.docs.map(doc => ({ 
+    // Combined listener for recent activities to avoid flickering
+    const qReports = query(collectionGroup(db, 'reports'), orderBy('date', 'desc'), limit(10));
+    const qProjects = query(collection(db, 'projects'), where('isEliminated', '==', false), orderBy('updatedAt', 'desc'), limit(10));
+
+    let reportsData: any[] = [];
+    let projectsData: any[] = [];
+
+    const updateActivities = () => {
+      const combined = [...reportsData, ...projectsData]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 8);
+      setRecentActivities(combined);
+    };
+
+    const unsubRecentReports = onSnapshot(qReports, (snapshot) => {
+      reportsData = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         type: 'REPORT',
         timestamp: doc.data().date,
         ...doc.data() 
       }));
-      setRecentActivities(prev => {
-        const combined = [...reports, ...prev.filter(a => a.type === 'STATUS_UPDATE')]
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, 8);
-        return combined;
-      });
+      updateActivities();
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'reports');
     });
 
-    const unsubRecentProjects = onSnapshot(query(collection(db, 'projects'), where('isEliminated', '==', false), orderBy('updatedAt', 'desc'), limit(5)), (snapshot) => {
-      const updates = snapshot.docs.map(doc => ({ 
+    const unsubRecentProjects = onSnapshot(qProjects, (snapshot) => {
+      projectsData = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         type: 'STATUS_UPDATE',
         timestamp: doc.data().updatedAt || doc.data().createdAt || Date.now(),
         ...doc.data() 
       }));
-      setRecentActivities(prev => {
-        const combined = [...updates, ...prev.filter(a => a.type === 'REPORT')]
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, 8);
-        return combined;
-      });
+      updateActivities();
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'projects');
     });
@@ -271,29 +278,46 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-6 justify-center pt-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-col sm:flex-row gap-6 justify-center pt-8"
+            >
               <Button 
-                className="h-16 px-10 bg-white text-primary hover:bg-white/90 font-black text-base tracking-tight rounded-2xl shadow-2xl group"
+                className="h-16 px-10 bg-white text-primary hover:bg-white/90 font-black text-base tracking-tight rounded-2xl shadow-2xl group relative overflow-hidden ring-4 ring-white/20"
                 onClick={() => window.open('https://www.coalindia.in/csr/', '_blank')}
               >
-                {t.explore}
-                <Briefcase size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
+                <span className="relative z-10 flex items-center">
+                  {t.explore}
+                  <Briefcase size={20} className="ml-3 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <motion.div 
+                  className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  whileHover={{ scale: 1.05 }}
+                />
               </Button>
+
               <Button 
                 variant="outline"
-                className="h-16 px-10 border-white/20 text-white hover:bg-white/10 font-black text-base tracking-tight rounded-2xl backdrop-blur-md"
+                className="h-16 px-10 border-white/40 text-white hover:bg-white hover:text-primary font-black text-base tracking-tight rounded-2xl backdrop-blur-md group transition-all duration-500 shadow-lg hover:shadow-white/20 ring-1 ring-white/30"
                 onClick={() => window.open('https://www.centralcoalfields.in/', '_blank')}
               >
+                <Globe size={20} className="mr-3 group-hover:rotate-12 transition-transform" />
                 {t.cclWebsite}
+                <ExternalLink size={16} className="ml-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </Button>
+
               <Button 
                 variant="outline"
-                className="h-16 px-10 border-white/20 text-white hover:bg-white/10 font-black text-base tracking-tight rounded-2xl backdrop-blur-md"
+                className="h-16 px-10 border-white/40 text-white hover:bg-white hover:text-primary font-black text-base tracking-tight rounded-2xl backdrop-blur-md group transition-all duration-500 shadow-lg hover:shadow-white/20 ring-1 ring-white/30"
                 onClick={() => window.open('https://www.coalindia.in/', '_blank')}
               >
+                <Globe size={20} className="mr-3 group-hover:rotate-12 transition-transform" />
                 {t.website}
+                <ExternalLink size={16} className="ml-3 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </Button>
-            </div>
+            </motion.div>
           </div>
         </CardContent>
       </Card>
@@ -430,6 +454,52 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-10">
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className="p-8 rounded-[2.5rem] bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 shadow-xl group cursor-pointer"
+          onClick={() => window.open('https://www.centralcoalfields.in/csr/csr_policy.php', '_blank')}
+        >
+          <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform">
+            <FileText size={28} />
+          </div>
+          <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-primary transition-colors">CSR Policy</h4>
+          <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Read the official CCL CSR Policy and guidelines for project implementation.</p>
+          <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
+            View Document <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className="p-8 rounded-[2.5rem] bg-gradient-to-br from-blue-500/10 to-blue-500/5 border border-blue-500/20 shadow-xl group cursor-pointer"
+          onClick={() => window.open('https://www.centralcoalfields.in/csr/csr_annual_report.php', '_blank')}
+        >
+          <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform">
+            <TrendingUp size={28} />
+          </div>
+          <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-blue-600 transition-colors">Annual Reports</h4>
+          <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Access comprehensive annual reports detailing our CSR impact and spending.</p>
+          <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
+            Browse Reports <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </motion.div>
+
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className="p-8 rounded-[2.5rem] bg-gradient-to-br from-orange-500/10 to-orange-500/5 border border-orange-500/20 shadow-xl group cursor-pointer"
+          onClick={() => window.open('https://www.centralcoalfields.in/contact/contact_us.php', '_blank')}
+        >
+          <div className="w-14 h-14 bg-orange-500 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg group-hover:scale-110 transition-transform">
+            <Users size={28} />
+          </div>
+          <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-orange-600 transition-colors">Contact Us</h4>
+          <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Get in touch with our CSR department for queries or partnership proposals.</p>
+          <div className="flex items-center gap-2 text-orange-600 font-black text-xs uppercase tracking-widest">
+            Get in Touch <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+          </div>
+        </motion.div>
       </div>
     </div>
   );

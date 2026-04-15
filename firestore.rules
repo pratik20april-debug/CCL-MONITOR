@@ -66,6 +66,7 @@ service cloud.firestore {
           request.auth.token.email == "pratik.20april@gmail.com" ||
           request.auth.token.email == "prat@ccl.gov.in" ||
           request.auth.token.email == "admin@ccl.gov.in" ||
+          request.auth.token.email == "john@ccl.gov.in" ||
           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
            get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN')
         );
@@ -117,7 +118,7 @@ service cloud.firestore {
                     request.resource.data.createdBy == request.auth.uid;
       allow update: if isAuthenticated() && isValidProject(request.resource.data) &&
                     request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if isAuthenticated();
+      allow delete: if isAdmin();
     }
 
     match /{path=**}/reports/{reportId} {

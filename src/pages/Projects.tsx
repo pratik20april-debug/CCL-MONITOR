@@ -37,7 +37,6 @@ export default function Projects() {
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [isViewMode, setIsViewMode] = React.useState(false);
   const [isUploadingDoc, setIsUploadingDoc] = React.useState(false);
-  const [previewDoc, setPreviewDoc] = React.useState<{ url: string, name: string } | null>(null);
 
   const exportToDoc = async () => {
     if (!selectedProject) return;
@@ -655,7 +654,8 @@ export default function Projects() {
                               variant="ghost"
                               size="icon"
                               className="w-8 h-8 rounded-full text-primary hover:bg-primary/10"
-                              onClick={() => setPreviewDoc({ url: doc.url, name: doc.name })}
+                              onClick={() => window.open(doc.url, '_blank')}
+                              title="View Document"
                             >
                               <Eye size={14} />
                             </Button>
@@ -704,43 +704,6 @@ export default function Projects() {
             <Button variant="outline" onClick={() => setProjectToDelete(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDeleteProject}>Eliminate Project</Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Document Preview Dialog */}
-      <Dialog open={!!previewDoc} onOpenChange={() => setPreviewDoc(null)}>
-        <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
-          <DialogHeader className="p-6 bg-card border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <DialogTitle className="text-xl font-black tracking-tight">{previewDoc?.name}</DialogTitle>
-                  <DialogDescription className="text-xs font-mono uppercase tracking-widest">Document Preview Mode</DialogDescription>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => window.open(previewDoc?.url, '_blank')} className="rounded-xl">
-                  Open in New Tab
-                </Button>
-              </div>
-            </div>
-          </DialogHeader>
-          <div className="flex-1 bg-muted/30 relative">
-            {previewDoc?.url ? (
-              <iframe 
-                src={previewDoc.url} 
-                className="w-full h-full border-none"
-                title="Document Preview"
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground font-medium">
-                Loading preview...
-              </div>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
     </div>

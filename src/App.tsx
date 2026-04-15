@@ -107,7 +107,7 @@ export default function App() {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               ...userData,
-              role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : userData.role
+              role: ['prat@ccl.gov.in', 'john@ccl.gov.in', 'admin@ccl.gov.in'].includes(firebaseUser.email || '') ? 'ADMIN' : userData.role
             });
           } else {
             // This might happen if registration failed halfway
@@ -115,7 +115,7 @@ export default function App() {
               uid: firebaseUser.uid,
               email: firebaseUser.email,
               name: firebaseUser.displayName || 'User',
-              role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : 'CCL_EMPLOYEE'
+              role: ['prat@ccl.gov.in', 'john@ccl.gov.in', 'admin@ccl.gov.in'].includes(firebaseUser.email || '') ? 'ADMIN' : 'CCL_EMPLOYEE'
             });
           }
         } catch (error) {
@@ -124,7 +124,7 @@ export default function App() {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             name: 'User',
-            role: firebaseUser.email === 'prat@ccl.gov.in' ? 'ADMIN' : 'CCL_EMPLOYEE'
+            role: ['prat@ccl.gov.in', 'john@ccl.gov.in', 'admin@ccl.gov.in'].includes(firebaseUser.email || '') ? 'ADMIN' : 'CCL_EMPLOYEE'
           });
         }
       } else {
@@ -261,7 +261,7 @@ export default function App() {
               {activeTab === 'status' && <ProjectStatus />}
               {activeTab === 'completed' && <CompletedProjects />}
               {activeTab === 'gis' && <GISDashboard />}
-              {activeTab === 'eliminated' && <EliminatedProjects />}
+              {activeTab === 'eliminated' && user.role === 'ADMIN' && <EliminatedProjects />}
               {activeTab === 'settings' && <Settings />}
             </motion.div>
           </AnimatePresence>

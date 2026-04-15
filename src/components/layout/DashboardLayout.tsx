@@ -65,8 +65,8 @@ export default function DashboardLayout({
     { id: 'completed', label: 'Completed Projects', icon: CheckCircle2 },
     { id: 'gis', label: 'GIS Dashboard', icon: MapIcon },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2 },
-  ];
+    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2, adminOnly: true },
+  ].filter(item => !item.adminOnly || userRole === 'ADMIN');
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden tech-grid">

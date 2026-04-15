@@ -72,6 +72,13 @@ export default function ProjectStatus() {
     }
   };
 
+  const isStatusActive = (projectStatus: string, buttonId: string) => {
+    if (projectStatus === buttonId) return true;
+    if (buttonId === 'ONGOING' && projectStatus === 'ACTIVE') return true;
+    if (buttonId === 'INCOMPLETE' && projectStatus === 'PENDING') return true;
+    return false;
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -129,7 +136,7 @@ export default function ProjectStatus() {
                         variant="ghost"
                         className={cn(
                           "h-12 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
-                          project.status === opt.id ? opt.active : opt.color
+                          isStatusActive(project.status, opt.id) ? opt.active : opt.color
                         )}
                         onClick={() => handleStatusUpdate(project.id, opt.id)}
                       >
