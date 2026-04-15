@@ -6,13 +6,18 @@ import { Label } from '@/src/components/ui/label';
 import { Textarea } from '@/src/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
-import { Download, Upload, FileText, MapPin, Camera, Plus } from 'lucide-react';
+import { Progress } from '@/src/components/ui/progress';
+import { Download, Upload, FileText, MapPin, Camera, Plus, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/src/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
 import { cn } from '@/src/lib/utils';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
-import { collection, query, onSnapshot, addDoc, collectionGroup, orderBy, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, collectionGroup, orderBy, deleteDoc, doc, updateDoc, where } from 'firebase/firestore';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table as DocTable, TableRow as DocTableRow, TableCell as DocTableCell, WidthType, ImageRun } from 'docx';
+import { saveAs } from 'file-saver';
 
 export default function ProgressReport() {
   const [reports, setReports] = React.useState<any[]>([]);
@@ -22,17 +27,43 @@ export default function ProgressReport() {
     projectId: '',
     area: '',
     progressText: '',
-    impactAssessment: ''
+    impactAssessment: '',
+    physicalProgress: 0,
+    financialProgress: 0
   });
-  const [tempPhotos, setTempPhotos] = React.useState<string[]>([]);
+  const [tempPhotos, setTempPhotos] = React.useState<any[]>([]);
+  const [isStatsOpen, setIsStatsOpen] = React.useState(false);
+  const [statsProject, setStatsProject] = React.useState<any>(null);
+  const [selectedDetailedReport, setSelectedDetailedReport] = React.useState<any>(null);
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const newPhotos = Array.from(files).map(file => URL.createObjectURL(file));
+    let location: { lat: number, lng: number } | null = null;
+    try {
+      location = await new Promise((resolve) => {
+        if (!navigator.geolocation) resolve(null);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => resolve(null),
+          { timeout: 5000 }
+        );
+      });
+    } catch (err) {
+      console.error("Geolocation error:", err);
+    }
+
+    const newPhotos = Array.from(files).map(file => ({
+      url: URL.createObjectURL(file),
+      name: file.name,
+      lat: location?.lat,
+      lng: location?.lng,
+      timestamp: Date.now()
+    }));
+    
     setTempPhotos(prev => [...prev, ...newPhotos]);
-    toast.success(`${files.length} photos added to report`);
+    toast.success(`${files.length} photos added with geotags`);
   };
 
   React.useEffect(() => {
@@ -123,6 +154,114 @@ export default function ProgressReport() {
     }
   };
 
+  const handleExportWord = async (report: any) => {
+    const project = projects.find(p => p.id === report.projectId);
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "CENTRAL COALFIELDS LIMITED",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: "DETAILED CSR PROGRESS REPORT",
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 400 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Project Name: ", bold: true }),
+              new TextRun(project?.name || 'N/A'),
+            ],
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Sector: ", bold: true }),
+              new TextRun(project?.sector || 'N/A'),
+            ],
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Current Status: ", bold: true }),
+              new TextRun(project?.status || 'N/A'),
+            ],
+            spacing: { after: 200 },
+          }),
+          new Paragraph({
+            text: "MOU DETAILS",
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 400, after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "MOU Cost: ", bold: true }),
+              new TextRun(`₹${project?.mouDetails?.cost?.toLocaleString() || '0'}`),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Duration: ", bold: true }),
+              new TextRun(project?.mouDetails?.duration || 'N/A'),
+            ],
+          }),
+          new Paragraph({
+            text: "PROGRESS SUMMARY",
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 400, after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Physical Progress: ", bold: true }),
+              new TextRun(`${report.physicalProgress}%`),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Financial Progress: ", bold: true }),
+              new TextRun(`${report.financialProgress}%`),
+            ],
+          }),
+          new Paragraph({
+            text: "REPORT DETAILS",
+            heading: HeadingLevel.HEADING_3,
+            spacing: { before: 400, after: 200 },
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Location: ", bold: true }),
+              new TextRun(report.area),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Work Description: ", bold: true }),
+              new TextRun(report.progressText),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Impact Assessment: ", bold: true }),
+              new TextRun(report.impactAssessment),
+            ],
+          }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `CSR_Detailed_Report_${project?.name || 'Project'}.docx`);
+    toast.success("Detailed report exported to Word");
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.projectId || !formData.area || !formData.progressText) {
@@ -131,8 +270,10 @@ export default function ProgressReport() {
     }
 
     try {
+      const project = projects.find(p => p.id === formData.projectId);
       const reportData = {
         ...formData,
+        projectName: project?.name || 'Unknown Project',
         date: Date.now(),
         status: 'PENDING',
         submittedBy: auth.currentUser?.uid,
@@ -141,14 +282,16 @@ export default function ProgressReport() {
 
       await addDoc(collection(db, 'projects', formData.projectId, 'reports'), reportData);
       
-      // Update project monitoring status
+      // Update project progress in the project document as well for quick access
       await updateDoc(doc(db, 'projects', formData.projectId), {
+        physicalProgress: formData.physicalProgress,
+        financialProgress: formData.financialProgress,
         monitoringStatus: tempPhotos.length > 0 ? 'SECURE' : 'WARNING',
         updatedAt: Date.now()
       });
 
       toast.success("Progress report submitted for verification!");
-      setFormData({ projectId: '', area: '', progressText: '', impactAssessment: '' });
+      setFormData({ projectId: '', area: '', progressText: '', impactAssessment: '', physicalProgress: 0, financialProgress: 0 });
       setTempPhotos([]);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, `projects/${formData.projectId}/reports`);
@@ -199,6 +342,31 @@ export default function ProgressReport() {
                     placeholder="e.g. Block A, Ranchi" 
                     value={formData.area}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Physical Progress (%)</Label>
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    className="bg-slate-50" 
+                    value={formData.physicalProgress}
+                    onChange={(e) => setFormData({ ...formData, physicalProgress: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Financial Progress (%)</Label>
+                  <Input 
+                    type="number" 
+                    min="0" 
+                    max="100"
+                    className="bg-slate-50" 
+                    value={formData.financialProgress}
+                    onChange={(e) => setFormData({ ...formData, financialProgress: Number(e.target.value) })}
                   />
                 </div>
               </div>
@@ -291,6 +459,8 @@ export default function ProgressReport() {
                 <TableRow>
                   <TableHead className="pl-6">Project</TableHead>
                   <TableHead>Area</TableHead>
+                  <TableHead>Physical %</TableHead>
+                  <TableHead>Financial %</TableHead>
                   <TableHead>Monitoring</TableHead>
                   <TableHead>Photos</TableHead>
                   <TableHead>Status</TableHead>
@@ -307,6 +477,22 @@ export default function ProgressReport() {
                       </TableCell>
                       <TableCell>{report.area}</TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold">{report.physicalProgress || 0}%</span>
+                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary" style={{ width: `${report.physicalProgress || 0}%` }} />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold">{report.financialProgress || 0}%</span>
+                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-blue-500" style={{ width: `${report.financialProgress || 0}%` }} />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className={cn(
                           hasGeotags ? "text-green-600 border-green-200 bg-green-50" : "text-yellow-600 border-yellow-200 bg-yellow-50"
                         )}>
@@ -315,15 +501,18 @@ export default function ProgressReport() {
                       </TableCell>
                       <TableCell>
                         <div className="flex -space-x-3">
-                          {report.geotaggedPhotos?.map((p: string, i: number) => (
+                          {report.geotaggedPhotos?.map((p: any, i: number) => (
                             <div key={i} className="relative group">
                               <div className="w-10 h-10 rounded-full border-4 border-card overflow-hidden shadow-lg">
                                 <img 
-                                  src={p} 
+                                  src={typeof p === 'string' ? p : p.url} 
                                   className="w-full h-full object-cover" 
                                   alt="Geotag"
                                   referrerPolicy="no-referrer"
                                 />
+                              </div>
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-900 text-white text-[8px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                                {p.lat ? `${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : 'No Geotag'}
                               </div>
                               <button 
                                 onClick={() => handleRemovePhoto(report.projectId, report.id, i)}
@@ -345,7 +534,25 @@ export default function ProgressReport() {
                       </TableCell>
                       <TableCell className="text-right pr-6">
                         <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="sm">View</Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-primary hover:bg-primary/10"
+                            onClick={() => {
+                              setStatsProject(projects.find(p => p.id === report.projectId));
+                              setIsStatsOpen(true);
+                            }}
+                          >
+                            <BarChart3 size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-primary hover:bg-primary/10"
+                            onClick={() => setSelectedDetailedReport(report)}
+                          >
+                            View
+                          </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -378,6 +585,188 @@ export default function ProgressReport() {
             <Button variant="outline" onClick={() => setReportToDelete(null)}>Cancel</Button>
             <Button variant="destructive" onClick={handleDeleteReport}>Delete Report</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Statistical Analysis Dialog */}
+      <Dialog open={isStatsOpen} onOpenChange={setIsStatsOpen}>
+        <DialogContent className="max-w-4xl rounded-[2rem]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black tracking-tight">Statistical Progress Analysis</DialogTitle>
+            <DialogDescription>In-depth physical and financial progress tracking for {statsProject?.name}</DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-8">
+            <div className="h-[300px] w-full">
+              <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Physical vs Financial Progress Trend</h4>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={reports.filter(r => r.projectId === statsProject?.id).reverse()}>
+                  <defs>
+                    <linearGradient id="colorPhys" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="oklch(0.55 0.15 240)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="oklch(0.55 0.15 240)" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorFin" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(val) => new Date(val).toLocaleDateString()} 
+                    tick={{ fontSize: 10, fontWeight: 'bold' }}
+                  />
+                  <YAxis tick={{ fontSize: 10, fontWeight: 'bold' }} domain={[0, 100]} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    labelFormatter={(val) => new Date(val).toLocaleString()}
+                  />
+                  <Area type="monotone" dataKey="physicalProgress" name="Physical %" stroke="oklch(0.55 0.15 240)" fillOpacity={1} fill="url(#colorPhys)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="financialProgress" name="Financial %" stroke="#3b82f6" fillOpacity={1} fill="url(#colorFin)" strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Current Physical Status</p>
+                <p className="text-3xl font-black">{statsProject?.physicalProgress || 0}%</p>
+                <Progress value={statsProject?.physicalProgress || 0} className="h-2 mt-3" />
+              </div>
+              <div className="p-6 rounded-2xl bg-blue-50 border border-blue-100">
+                <p className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1">Current Financial Status</p>
+                <p className="text-3xl font-black">{statsProject?.financialProgress || 0}%</p>
+                <Progress value={statsProject?.financialProgress || 0} className="h-2 mt-3 bg-blue-100" />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setIsStatsOpen(false)} className="rounded-xl font-bold">Close Analysis</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detailed Report View Dialog */}
+      <Dialog open={!!selectedDetailedReport} onOpenChange={() => setSelectedDetailedReport(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-[2rem] print:shadow-none print:border-none">
+          <DialogHeader className="print:hidden">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl font-black tracking-tight">Detailed Progress Report</DialogTitle>
+                <DialogDescription>Comprehensive analysis of project status and MOU compliance</DialogDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="gap-2" onClick={handlePrint}>
+                  <Download size={16} /> Print PDF
+                </Button>
+                <Button variant="default" size="sm" className="gap-2" onClick={() => handleExportWord(selectedDetailedReport)}>
+                  <FileText size={16} /> Export Word
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {selectedDetailedReport && (
+            <div id="printable-report" className="py-6 space-y-8 print:p-0">
+              <div className="text-center space-y-2 mb-8">
+                <h2 className="text-3xl font-black tracking-tighter text-primary">CENTRAL COALFIELDS LIMITED</h2>
+                <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.3em]">CSR Monitoring & Impact Assessment</p>
+                <div className="h-1 w-24 bg-primary mx-auto rounded-full" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Project Overview</h4>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-sm text-muted-foreground font-medium">Project Name</span>
+                        <span className="text-sm font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.name}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-sm text-muted-foreground font-medium">Sector</span>
+                        <span className="text-sm font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.sector || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span className="text-sm text-muted-foreground font-medium">Current Status</span>
+                        <Badge className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.status}</Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">MOU Compliance</h4>
+                    <div className="p-4 rounded-2xl bg-muted/50 border space-y-3">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">MOU Cost</span>
+                        <span className="font-bold">₹{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.cost?.toLocaleString() || '0'}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Duration</span>
+                        <span className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.duration || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-muted-foreground">Commencement</span>
+                        <span className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.dateOfCommencement ? new Date(projects.find(p => p.id === selectedDetailedReport.projectId).mouDetails.dateOfCommencement).toLocaleDateString() : 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Progress Analysis</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-1">Physical</p>
+                        <p className="text-xl font-black">{selectedDetailedReport.physicalProgress}%</p>
+                      </div>
+                      <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
+                        <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 mb-1">Financial</p>
+                        <p className="text-xl font-black">{selectedDetailedReport.financialProgress}%</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Work Description</h4>
+                    <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-2xl border italic">
+                      "{selectedDetailedReport.progressText}"
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Geotagged Evidence</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {selectedDetailedReport.geotaggedPhotos?.map((p: any, i: number) => (
+                    <div key={i} className="space-y-2">
+                      <div className="aspect-video rounded-2xl overflow-hidden border-2 border-white shadow-md">
+                        <img 
+                          src={typeof p === 'string' ? p : p.url} 
+                          className="w-full h-full object-cover" 
+                          alt="Evidence"
+                        />
+                      </div>
+                      {p.lat && (
+                        <p className="text-[8px] font-mono text-muted-foreground text-center">
+                          LAT: {p.lat.toFixed(6)} | LNG: {p.lng.toFixed(6)}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-8 border-t flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                <span>Report ID: {selectedDetailedReport.id}</span>
+                <span>Generated on: {new Date().toLocaleString()}</span>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

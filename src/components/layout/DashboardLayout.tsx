@@ -59,12 +59,14 @@ export default function DashboardLayout({
   const navItems = [
     { id: 'home', label: 'Home', icon: LayoutDashboard },
     { id: 'projects', label: 'Projects', icon: Briefcase },
+    { id: 'mou', label: 'Project MOU', icon: FileText },
     { id: 'reports', label: 'Progress Report', icon: FileText },
-    { id: 'status', label: 'Project Status', icon: Activity, role: 'ADMIN' },
-    { id: 'completed', label: 'Completed Projects', icon: CheckCircle2, role: 'ADMIN' },
+    { id: 'status', label: 'Project Status', icon: Activity },
+    { id: 'completed', label: 'Completed Projects', icon: CheckCircle2 },
+    { id: 'gis', label: 'GIS Dashboard', icon: MapIcon },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2, role: 'ADMIN' },
-  ].filter(item => !item.role || item.role === userRole);
+    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2 },
+  ];
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden tech-grid">

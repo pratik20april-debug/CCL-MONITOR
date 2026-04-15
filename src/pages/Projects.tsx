@@ -32,6 +32,7 @@ export default function Projects() {
   const [projects, setProjects] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [newProjectName, setNewProjectName] = React.useState('');
+  const [newProjectSector, setNewProjectSector] = React.useState('OTHERS');
   const [selectedProject, setSelectedProject] = React.useState<any>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
   const [isViewMode, setIsViewMode] = React.useState(false);
@@ -125,11 +126,15 @@ export default function Projects() {
     });
   };
 
-  const handleRemoveDoc = async (projectId: string) => {
+  const handleRemoveDoc = async (projectId: string, docIndex: number) => {
     try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
+      
+      const newDocs = (project.documents || []).filter((_: any, i: number) => i !== docIndex);
+      
       await updateDoc(doc(db, 'projects', projectId), {
-        documentUrl: null,
-        documentName: null,
+        documents: newDocs,
         updatedAt: Date.now()
       });
       toast.success("Document removed successfully");
@@ -142,17 +147,20 @@ export default function Projects() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // In a real app, we would upload to Firebase Storage
-    // For this demo, we'll simulate the upload and store a mock URL
     toast.promise(
       new Promise((resolve) => setTimeout(resolve, 1500)),
       {
         loading: `Uploading ${file.name}...`,
         success: async () => {
           const mockUrl = URL.createObjectURL(file);
+          const project = projects.find(p => p.id === projectId);
+          const currentDocs = project?.documents || [];
+          
           await updateDoc(doc(db, 'projects', projectId), {
-            documentUrl: mockUrl,
-            documentName: file.name,
+            documents: [
+              ...currentDocs,
+              { url: mockUrl, name: file.name, uploadedAt: Date.now() }
+            ],
             updatedAt: Date.now()
           });
           return "Document uploaded successfully!";
@@ -188,19 +196,31 @@ export default function Projects() {
     }
     
     try {
+      // Simulate geocoding for Ranchi area
+      const mockLat = 23.3441 + (Math.random() - 0.5) * 0.1;
+      const mockLng = 85.3096 + (Math.random() - 0.5) * 0.1;
+
       await addDoc(collection(db, 'projects'), {
         name: newProjectName,
+        sector: newProjectSector,
         status: 'INCOMPLETE',
         isGenerated: false,
         monitoringStatus: 'PENDING',
         createdAt: Date.now(),
         updatedAt: Date.now(),
         createdBy: auth.currentUser?.uid,
+        isEliminated: false,
+        location: {
+          address: 'Ranchi, Jharkhand',
+          lat: mockLat,
+          lng: mockLng
+        },
         sections: {
           projectName: newProjectName
         }
       });
       setNewProjectName('');
+      setNewProjectSector('OTHERS');
       setIsAddDialogOpen(false);
       toast.success("Project initialized successfully!");
     } catch (error) {
@@ -231,10 +251,11 @@ export default function Projects() {
     
     try {
       await updateDoc(doc(db, 'projects', selectedProject.id), {
+        name: selectedProject.name,
         sections: selectedProject.sections,
         updatedAt: Date.now()
       });
-      toast.success("Project sections saved!");
+      toast.success("Project details saved!");
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `projects/${selectedProject.id}`);
     }
@@ -391,14 +412,30 @@ export default function Projects() {
                     </div>
                     
                     {index === 0 ? (
-                      <Input 
-                        value={selectedProject?.sections?.projectName || ''} 
-                        onChange={(e) => setSelectedProject({
-                          ...selectedProject,
-                          sections: { ...selectedProject.sections, projectName: e.target.value }
-                        })}
-                        className="bg-slate-50 border-slate-200 focus:bg-white h-12 text-base"
-                      />
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Display Name</Label>
+                          <Input 
+                            value={selectedProject.name} 
+                            onChange={(e) => setSelectedProject({
+                              ...selectedProject,
+                              name: e.target.value
+                            })}
+                            className="bg-slate-50 border-slate-200 focus:bg-white h-12 text-base font-bold"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Section 1: Project Name</Label>
+                          <Input 
+                            value={selectedProject?.sections?.projectName || ''} 
+                            onChange={(e) => setSelectedProject({
+                              ...selectedProject,
+                              sections: { ...selectedProject.sections, projectName: e.target.value }
+                            })}
+                            className="bg-slate-50 border-slate-200 focus:bg-white h-12 text-base"
+                          />
+                        </div>
+                      </div>
                     ) : index === 1 ? (
                       <Select 
                         value={selectedProject?.sections?.applicableSection || ''}
@@ -477,15 +514,35 @@ export default function Projects() {
                 Enter the project name to initialize a new CSR project mission.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-6">
-              <Label htmlFor="projectName" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Project Mission Name</Label>
-              <Input 
-                id="projectName" 
-                value={newProjectName} 
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder="e.g. Solar Power for Rural Schools"
-                className="mt-3 h-12 rounded-xl bg-muted/50 border-none focus:ring-2 focus:ring-primary"
-              />
+            <div className="py-6 space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="projectName" className="text-xs font-black uppercase tracking-widest text-muted-foreground">Project Mission Name</Label>
+                <Input 
+                  id="projectName" 
+                  value={newProjectName} 
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  placeholder="e.g. Solar Power for Rural Schools"
+                  className="h-12 rounded-xl bg-muted/50 border-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Project Sector</Label>
+                <Select value={newProjectSector} onValueChange={setNewProjectSector}>
+                  <SelectTrigger className="h-12 rounded-xl bg-muted/50 border-none focus:ring-2 focus:ring-primary">
+                    <SelectValue placeholder="Select Sector" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LIVELIHOOD">Livelihood</SelectItem>
+                    <SelectItem value="SKILL DEVELOPMENT">Skill Development</SelectItem>
+                    <SelectItem value="EMPOWERMENT">Empowerment</SelectItem>
+                    <SelectItem value="EDUCATION">Education</SelectItem>
+                    <SelectItem value="HEALTHCARE">Healthcare</SelectItem>
+                    <SelectItem value="ENVIRONMENT">Environment</SelectItem>
+                    <SelectItem value="INFRASTRUCTURE">Infrastructure</SelectItem>
+                    <SelectItem value="OTHERS">Others</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter className="gap-3">
               <Button variant="ghost" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl font-bold">Cancel</Button>
@@ -526,6 +583,11 @@ export default function Projects() {
               <CardTitle className="text-2xl font-black tracking-tighter leading-tight group-hover:text-primary transition-colors">
                 {project.name}
               </CardTitle>
+              <div className="flex gap-2 mt-2">
+                <Badge variant="outline" className="text-[10px] font-mono uppercase border-primary/20 text-primary">
+                  {project.sector || 'OTHERS'}
+                </Badge>
+              </div>
               <CardDescription className="text-xs font-mono uppercase tracking-widest mt-2">
                 ID: {project.id.slice(0, 8)}
               </CardDescription>
@@ -576,42 +638,39 @@ export default function Projects() {
                   </div>
                 </div>
 
-                {project.documentUrl && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10">
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                          <FileText size={16} />
+                {project.documents && project.documents.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Attached Documents ({project.documents.length})</p>
+                    <div className="space-y-2 max-h-[150px] overflow-y-auto pr-2 custom-scrollbar">
+                      {project.documents.map((doc: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10 group/doc">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                              <FileText size={16} />
+                            </div>
+                            <span className="text-xs font-bold truncate text-foreground">{doc.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-primary hover:bg-primary/10"
+                              onClick={() => setPreviewDoc({ url: doc.url, name: doc.name })}
+                            >
+                              <Eye size={14} />
+                            </Button>
+                            <Button 
+                              variant="ghost"
+                              size="icon"
+                              className="w-8 h-8 rounded-full text-destructive hover:bg-destructive/10"
+                              onClick={() => handleRemoveDoc(project.id, i)}
+                            >
+                              <Plus className="rotate-45" size={14} />
+                            </Button>
+                          </div>
                         </div>
-                        <span className="text-xs font-bold truncate text-foreground">{project.documentName || 'Project Document'}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          variant="ghost"
-                          size="icon"
-                          className="w-8 h-8 rounded-full text-primary hover:bg-primary/10"
-                          onClick={() => setPreviewDoc({ url: project.documentUrl, name: project.documentName })}
-                        >
-                          <Eye size={14} />
-                        </Button>
-                        <Button 
-                          variant="ghost"
-                          size="icon"
-                          className="w-8 h-8 rounded-full text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveDoc(project.id)}
-                        >
-                          <Plus className="rotate-45" size={14} />
-                        </Button>
-                      </div>
+                      ))}
                     </div>
-                    <Button 
-                      variant="ghost"
-                      className="w-full h-12 rounded-xl gap-2 text-primary font-black text-xs hover:bg-primary/5 transition-all"
-                      onClick={() => setPreviewDoc({ url: project.documentUrl, name: project.documentName })}
-                    >
-                      <Eye size={16} />
-                      IN-APP PREVIEW
-                    </Button>
                   </div>
                 )}
 

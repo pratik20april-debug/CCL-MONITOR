@@ -24,7 +24,7 @@ import {
 } from 'recharts';
 import { cn } from '@/src/lib/utils';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
-import { collection, onSnapshot, collectionGroup, query, orderBy, limit } from 'firebase/firestore';
+import { collection, onSnapshot, collectionGroup, query, orderBy, limit, where } from 'firebase/firestore';
 import { AppContext } from '../App';
 import { Languages, Globe } from 'lucide-react';
 
@@ -39,6 +39,7 @@ const translations = {
     philosophyText: "CCL's CSR initiatives are focused on the socio-economic development of the community, particularly in the coal mining areas of Jharkhand.",
     explore: "EXPLORE CSR PORTAL",
     website: "COAL INDIA WEBSITE",
+    cclWebsite: "CCL RANCHI WEBSITE",
     activeProjects: "Active Projects",
     completed: "Completed",
     reports: "Reports Filed",
@@ -63,6 +64,7 @@ const translations = {
     philosophyText: "सीसीएल की सीएसआर पहल समुदाय के सामाजिक-आर्थिक विकास पर केंद्रित है, विशेष रूप से झारखंड के कोयला खनन क्षेत्रों में।",
     explore: "सीएसआर पोर्टल खोजें",
     website: "कोल इंडिया वेबसाइट",
+    cclWebsite: "सीसीएल रांची वेबसाइट",
     activeProjects: "सक्रिय परियोजनाएं",
     completed: "पूरा हुआ",
     reports: "दायर रिपोर्ट",
@@ -175,7 +177,7 @@ export default function Home() {
       handleFirestoreError(error, OperationType.LIST, 'reports');
     });
 
-    const unsubRecentProjects = onSnapshot(query(collection(db, 'projects'), orderBy('updatedAt', 'desc'), limit(5)), (snapshot) => {
+    const unsubRecentProjects = onSnapshot(query(collection(db, 'projects'), where('isEliminated', '==', false), orderBy('updatedAt', 'desc'), limit(5)), (snapshot) => {
       const updates = snapshot.docs.map(doc => ({ 
         id: doc.id, 
         type: 'STATUS_UPDATE',
@@ -280,6 +282,13 @@ export default function Home() {
               <Button 
                 variant="outline"
                 className="h-16 px-10 border-white/20 text-white hover:bg-white/10 font-black text-base tracking-tight rounded-2xl backdrop-blur-md"
+                onClick={() => window.open('https://www.centralcoalfields.in/', '_blank')}
+              >
+                {t.cclWebsite}
+              </Button>
+              <Button 
+                variant="outline"
+                className="h-16 px-10 border-white/20 text-white hover:bg-white/10 font-black text-base tracking-tight rounded-2xl backdrop-blur-md"
                 onClick={() => window.open('https://www.coalindia.in/', '_blank')}
               >
                 {t.website}
@@ -376,18 +385,30 @@ export default function Home() {
                     <div className="flex items-center gap-4">
                       <p className="font-black text-foreground text-xl tracking-tight group-hover:text-primary transition-colors">
                         {activity.type === 'REPORT' 
-                          ? `Progress update for ${activity.area}` 
-                          : `Status change for ${activity.title || activity.sections?.projectTitle || 'Project'}`}
+                          ? `Progress update for ${activity.projectName || activity.area}` 
+                          : `Status change for ${activity.name || activity.sections?.projectName || 'Project'}`}
                       </p>
                       <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-muted/50">
                         {new Date(activity.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-1 font-medium leading-relaxed max-w-3xl">
-                      {activity.type === 'REPORT' 
-                        ? activity.progressText 
-                        : `Current Status: ${activity.status}`}
-                    </p>
+                    <div className="flex items-center gap-4">
+                      <p className="text-sm text-muted-foreground line-clamp-1 font-medium leading-relaxed max-w-3xl">
+                        {activity.type === 'REPORT' 
+                          ? activity.progressText 
+                          : `Current Status: ${activity.status}`}
+                      </p>
+                      {activity.type === 'REPORT' && (
+                        <div className="flex gap-2">
+                          <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20">
+                            PHYSICAL: {activity.physicalProgress || 0}%
+                          </Badge>
+                          <Badge variant="outline" className="text-[9px] font-bold text-blue-600 border-blue-200">
+                            FINANCIAL: {activity.financialProgress || 0}%
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
                     <Badge className={cn(

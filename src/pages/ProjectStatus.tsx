@@ -33,10 +33,17 @@ export default function ProjectStatus() {
 
   const handleStatusUpdate = async (projectId: string, newStatus: string) => {
     try {
-      await updateDoc(doc(db, 'projects', projectId), {
+      const updateData: any = {
         status: newStatus,
         updatedAt: Date.now()
-      });
+      };
+      
+      // If completed, ensure it's marked as generated too
+      if (newStatus === 'COMPLETED') {
+        updateData.isGenerated = true;
+      }
+
+      await updateDoc(doc(db, 'projects', projectId), updateData);
       toast.success(`Project status updated to ${newStatus.toLowerCase()}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `projects/${projectId}`);

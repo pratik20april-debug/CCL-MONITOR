@@ -8,6 +8,8 @@ import ProgressReport from './pages/ProgressReport';
 import ProjectStatus from './pages/ProjectStatus';
 import CompletedProjects from './pages/CompletedProjects';
 import EliminatedProjects from './pages/EliminatedProjects';
+import ProjectMOU from './pages/ProjectMOU';
+import GISDashboard from './pages/GISDashboard';
 import Settings from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, enableOffline } from './firebase';
@@ -17,10 +19,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { ThemeProvider } from 'next-themes';
 
 export const AppContext = React.createContext<{
-  advancedMode: boolean;
-  setAdvancedMode: (val: boolean) => void;
-  customHtml: string;
-  setCustomHtml: (val: string) => void;
   fontSize: string;
   setFontSize: (val: string) => void;
   fontStyle: string;
@@ -32,10 +30,6 @@ export const AppContext = React.createContext<{
   language: 'en' | 'hi';
   setLanguage: (val: 'en' | 'hi') => void;
 }>({
-  advancedMode: false,
-  setAdvancedMode: () => {},
-  customHtml: '',
-  setCustomHtml: () => {},
   fontSize: 'medium',
   setFontSize: () => {},
   fontStyle: 'sans',
@@ -52,8 +46,6 @@ export default function App() {
   const [user, setUser] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('home');
-  const [advancedMode, setAdvancedMode] = React.useState(false);
-  const [customHtml, setCustomHtml] = React.useState('');
   const [fontSize, setFontSize] = React.useState('medium');
   const [fontStyle, setFontStyle] = React.useState('sans');
   const [themeColor, setThemeColor] = React.useState('blue');
@@ -241,8 +233,6 @@ export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="light">
       <AppContext.Provider value={{ 
-        advancedMode, setAdvancedMode, 
-        customHtml, setCustomHtml,
         fontSize, setFontSize,
         fontStyle, setFontStyle,
         themeColor, setThemeColor,
@@ -266,23 +256,15 @@ export default function App() {
             >
               {activeTab === 'home' && <Home />}
               {activeTab === 'projects' && <Projects />}
+              {activeTab === 'mou' && <ProjectMOU />}
               {activeTab === 'reports' && <ProgressReport />}
               {activeTab === 'status' && <ProjectStatus />}
               {activeTab === 'completed' && <CompletedProjects />}
+              {activeTab === 'gis' && <GISDashboard />}
               {activeTab === 'eliminated' && <EliminatedProjects />}
               {activeTab === 'settings' && <Settings />}
             </motion.div>
           </AnimatePresence>
-          
-          {advancedMode && customHtml && (
-            <div className="mt-12 p-6 border-2 border-dashed border-primary/20 rounded-3xl bg-primary/5">
-              <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-                <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-                Custom Advanced Feature
-              </h3>
-              <div dangerouslySetInnerHTML={{ __html: customHtml }} />
-            </div>
-          )}
           
           <Toaster position="top-right" richColors />
         </DashboardLayout>

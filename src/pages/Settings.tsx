@@ -27,15 +27,11 @@ import { AppContext } from '../App';
 export default function Settings() {
   const { theme, setTheme } = useTheme();
   const { 
-    advancedMode, setAdvancedMode, 
-    customHtml, setCustomHtml,
     fontSize, setFontSize,
     fontStyle, setFontStyle,
     themeColor, setThemeColor,
     offlineMode, setOfflineMode
   } = React.useContext(AppContext);
-
-  const [localHtml, setLocalHtml] = React.useState(customHtml || '<!-- Add your custom HTML/JS here for new features -->\n<div id="custom-feature" style="padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">\n  <h4 style="color: #1e293b; font-weight: bold;">Custom Widget</h4>\n  <p style="color: #64748b; font-size: 14px;">This is a developer-injected feature.</p>\n</div>');
 
   const handleUpdate = () => {
     toast.promise(
@@ -46,20 +42,6 @@ export default function Settings() {
         error: 'Update failed',
       }
     );
-  };
-
-  const deployCode = () => {
-    setCustomHtml(localHtml);
-    toast.success("Custom code deployed successfully!");
-  };
-
-  const toggleOffline = () => {
-    setOfflineMode(!offlineMode);
-    if (!offlineMode) {
-      toast.success("Power Mode Enabled: Application will now work offline!");
-    } else {
-      toast.info("Power Mode Disabled: Online connection required for data sync.");
-    }
   };
 
   return (
@@ -141,7 +123,7 @@ export default function Settings() {
             <div className="p-4 rounded-xl bg-orange-500/5 border border-orange-500/10">
               <p className="text-xs text-orange-700 font-medium leading-relaxed">
                 <span className="font-black uppercase tracking-widest block mb-1">How it works:</span>
-                When enabled, the application caches all project data and map tiles locally. You can continue to view projects, add reports, and use Geo Tracking even in remote mining areas with zero connectivity. Data will sync automatically once you return to a network.
+                When enabled, the application caches all project data and map tiles locally. You can continue to view projects and add reports even in remote mining areas with zero connectivity. Data will sync automatically once you return to a network.
               </p>
             </div>
           </CardContent>
@@ -249,85 +231,9 @@ export default function Settings() {
                 ))}
               </div>
             </div>
-
-            <div className="flex items-center justify-between pt-4 border-t border-border">
-              <div className="space-y-0.5">
-                <Label className="text-base">System Mode</Label>
-                <p className="text-sm text-muted-foreground">Toggle between Default and Advanced</p>
-              </div>
-              <div className="flex bg-muted p-1 rounded-lg">
-                <button 
-                  onClick={() => setAdvancedMode(false)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                    !advancedMode ? "bg-background shadow-sm text-primary" : "text-muted-foreground"
-                  )}
-                >
-                  Default
-                </button>
-                <button 
-                  onClick={() => setAdvancedMode(true)}
-                  className={cn(
-                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                    advancedMode ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground"
-                  )}
-                >
-                  Advanced
-                </button>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* Advanced Mode Section */}
-      <AnimatePresence>
-        {advancedMode && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-          >
-            <Card className="border-2 border-primary/20 shadow-xl overflow-hidden bg-card">
-              <CardHeader className="bg-primary text-primary-foreground pb-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                      <Code size={20} />
-                    </div>
-                    <div>
-                      <CardTitle>Developer Console</CardTitle>
-                      <CardDescription className="text-primary-foreground/70">Inject custom HTML/JS features</CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="bg-yellow-400 text-yellow-900 border-none">
-                    <Zap size={12} className="mr-1 fill-current" /> ADVANCED MODE ACTIVE
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold flex items-center gap-2">
-                    <Monitor size={14} /> Custom Feature Code
-                  </Label>
-                  <textarea 
-                    value={localHtml}
-                    onChange={(e) => setLocalHtml(e.target.value)}
-                    className="w-full min-h-[300px] p-6 bg-slate-900 text-green-400 font-mono text-sm rounded-xl border-none focus:ring-2 focus:ring-primary shadow-inner leading-relaxed"
-                    spellCheck={false}
-                  />
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setLocalHtml('')}>Reset</Button>
-                  <Button className="bg-green-600 hover:bg-green-700 shadow-lg px-8" onClick={deployCode}>
-                    Deploy Feature
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

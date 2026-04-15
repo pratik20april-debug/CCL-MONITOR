@@ -113,27 +113,20 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin() && isValidProject(request.resource.data) && 
+      allow create: if isAuthenticated() && isValidProject(request.resource.data) && 
                     request.resource.data.createdBy == request.auth.uid;
-      allow update: if isAdmin() && isValidProject(request.resource.data) &&
-                    request.resource.data.createdAt == resource.data.createdAt &&
-                    request.resource.data.createdBy == resource.data.createdBy;
-      allow delete: if isAdmin();
+      allow update: if isAuthenticated() && isValidProject(request.resource.data) &&
+                    request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAuthenticated();
     }
 
     match /{path=**}/reports/{reportId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidReport(request.resource.data) && 
                     request.resource.data.submittedBy == request.auth.uid;
-      allow update: if (isAdmin() && isValidReport(request.resource.data) && 
-                        request.resource.data.submittedBy == resource.data.submittedBy &&
-                        request.resource.data.projectId == resource.data.projectId) || 
-                    (isOwner(resource.data.submittedBy) && resource.data.status == 'PENDING' && 
-                     isValidReport(request.resource.data) &&
-                     request.resource.data.status == 'PENDING' &&
-                     request.resource.data.submittedBy == resource.data.submittedBy &&
-                     request.resource.data.projectId == resource.data.projectId);
-      allow delete: if isAdmin();
+      allow update: if isAuthenticated() && isValidReport(request.resource.data) && 
+                    request.resource.data.projectId == resource.data.projectId;
+      allow delete: if isAuthenticated();
     }
   }
 }

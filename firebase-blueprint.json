@@ -25,7 +25,28 @@
         "name": { "type": "string" },
         "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED", "PENDING", "ONGOING", "DELAYED", "INCOMPLETE"] },
         "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "sector": { "type": "string", "enum": ["LIVELIHOOD", "SKILL DEVELOPMENT", "EMPOWERMENT", "EDUCATION", "HEALTHCARE", "ENVIRONMENT", "INFRASTRUCTURE", "OTHERS"] },
         "expectedCompletionDate": { "type": "number" },
+        "mouDetails": {
+          "type": "object",
+          "properties": {
+            "duration": { "type": "string" },
+            "cost": { "type": "number" },
+            "dateOfMOU": { "type": "number" },
+            "dateOfCommencement": { "type": "number" },
+            "extensionDate": { "type": "number" },
+            "reasonOfExtension": { "type": "string" },
+            "financialYear": { "type": "string" }
+          }
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "address": { "type": "string" },
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          }
+        },
         "milestones": {
           "type": "array",
           "items": {
@@ -61,6 +82,17 @@
             "benefitsToCompany": { "type": "string" }
           }
         },
+        "documents": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": { "type": "string" },
+              "name": { "type": "string" },
+              "uploadedAt": { "type": "number" }
+            }
+          }
+        },
         "createdAt": { "type": "number" },
         "updatedAt": { "type": "number" },
         "createdBy": { "type": "string" }
@@ -74,9 +106,12 @@
       "properties": {
         "id": { "type": "string" },
         "projectId": { "type": "string" },
+        "projectName": { "type": "string" },
         "date": { "type": "number" },
         "area": { "type": "string" },
         "progressText": { "type": "string" },
+        "physicalProgress": { "type": "number", "description": "Percentage of physical work completed" },
+        "financialProgress": { "type": "number", "description": "Percentage of funding received" },
         "impactAssessment": { "type": "string" },
         "geotaggedPhotos": { "type": "array", "items": { "type": "string" } },
         "location": {
