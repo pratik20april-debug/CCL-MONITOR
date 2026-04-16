@@ -47,8 +47,7 @@ const translations = {
     completed: "Completed",
     reports: "Reports Filed",
     beneficiaries: "Beneficiaries",
-    distribution: "Project Distribution",
-    growth: "Impact Growth",
+    ongoingCompletion: "Ongoing Project",
     operations: "Recent Field Operations",
     searchPlaceholder: "Search for projects, reports, or guidance...",
     helpTitle: "Help & Support",
@@ -72,8 +71,7 @@ const translations = {
     completed: "पूरा हुआ",
     reports: "दायर रिपोर्ट",
     beneficiaries: "लाभार्थी",
-    distribution: "परियोजना वितरण",
-    growth: "प्रभाव वृद्धि",
+    ongoingCompletion: "चल रही परियोजना",
     operations: "हाल के क्षेत्र संचालन",
     searchPlaceholder: "परियोजनाओं, रिपोर्टों या मार्गदर्शन के लिए खोजें...",
     helpTitle: "सहायता और समर्थन",
@@ -129,6 +127,7 @@ export default function Home() {
     totalReports: 0,
     totalBeneficiaries: 0
   });
+  const [ongoingProjects, setOngoingProjects] = React.useState<any[]>([]);
   const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
 
   React.useEffect(() => {
@@ -150,6 +149,12 @@ export default function Home() {
         completedProjects: projects.filter(p => p.status === 'COMPLETED').length,
         totalBeneficiaries: beneficiaries
       }));
+
+      setOngoingProjects(active.map(p => ({
+        id: p.id,
+        name: p.name || p.sections?.projectName || 'Unnamed Project',
+        completion: p.sections?.physicalProgress || 0
+      })));
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'projects');
     });
@@ -286,7 +291,7 @@ export default function Home() {
             >
               <Button 
                 className="h-16 px-10 bg-white text-primary hover:bg-white/90 font-black text-base tracking-tight rounded-2xl shadow-2xl group relative overflow-hidden ring-4 ring-white/20"
-                onClick={() => window.open('https://www.coalindia.in/csr/', '_blank')}
+                onClick={() => window.open('https://www.centralcoalfields.in/csr/index.php', '_blank')}
               >
                 <span className="relative z-10 flex items-center">
                   {t.explore}
@@ -329,62 +334,40 @@ export default function Home() {
         <StatCard title={t.beneficiaries} value={stats.totalBeneficiaries.toLocaleString()} icon={Users} trend={24} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div className="grid grid-cols-1 gap-10">
         <Card className="shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full" />
-                {t.distribution}
+                {t.ongoingCompletion}
               </CardTitle>
-              <Badge variant="outline" className="font-mono text-[10px]">REAL-TIME DATA</Badge>
+              <Badge variant="outline" className="font-mono text-[10px]">LIVE PROGRESS</Badge>
             </div>
           </CardHeader>
-          <CardContent className="h-[350px] pt-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis axisLine={false} tickLine={false} fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip 
-                  cursor={{ fill: 'hsl(var(--primary) / 0.05)' }}
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Bar dataKey="projects" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} barSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full" />
-                {t.growth}
-              </CardTitle>
-              <Badge variant="outline" className="font-mono text-[10px]">MONTHLY TREND</Badge>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {ongoingProjects.length > 0 ? ongoingProjects.map((project) => (
+                <div key={project.id} className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all group">
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold text-sm truncate max-w-[200px] group-hover:text-primary transition-colors">{project.name}</p>
+                    <span className="font-mono text-xs font-black text-primary">{project.completion}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${project.completion}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className="h-full bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                    />
+                  </div>
+                </div>
+              )) : (
+                <div className="col-span-full text-center py-10 text-muted-foreground italic">
+                  No ongoing projects found.
+                </div>
+              )}
             </div>
-          </CardHeader>
-          <CardContent className="h-[350px] pt-10">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis axisLine={false} tickLine={false} fontSize={10} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderRadius: '12px', border: '1px solid hsl(var(--border))', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="impact" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={4} 
-                  dot={{ r: 5, fill: 'hsl(var(--primary))', strokeWidth: 3, stroke: 'hsl(var(--card))' }}
-                  activeDot={{ r: 8, strokeWidth: 0 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
@@ -467,7 +450,7 @@ export default function Home() {
           <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-primary transition-colors">CSR Policy</h4>
           <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Read the official CCL CSR Policy and guidelines for project implementation.</p>
           <div className="flex items-center gap-2 text-primary font-black text-xs uppercase tracking-widest">
-            View Document <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            View Policy Section <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </div>
         </motion.div>
 
@@ -482,7 +465,7 @@ export default function Home() {
           <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-blue-600 transition-colors">Annual Reports</h4>
           <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Access comprehensive annual reports detailing our CSR impact and spending.</p>
           <div className="flex items-center gap-2 text-blue-600 font-black text-xs uppercase tracking-widest">
-            Browse Reports <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            View Reports Section <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </div>
         </motion.div>
 
@@ -497,7 +480,7 @@ export default function Home() {
           <h4 className="text-xl font-black tracking-tight mb-2 group-hover:text-orange-600 transition-colors">Contact Us</h4>
           <p className="text-sm text-muted-foreground font-medium leading-relaxed mb-6">Get in touch with our CSR department for queries or partnership proposals.</p>
           <div className="flex items-center gap-2 text-orange-600 font-black text-xs uppercase tracking-widest">
-            Get in Touch <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            View Contact Section <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </div>
         </motion.div>
       </div>

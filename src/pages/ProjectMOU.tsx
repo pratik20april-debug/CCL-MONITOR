@@ -5,7 +5,7 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
-import { FileText, Download, Plus, Edit, Search, Save } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Search, Save, Eye, FileSpreadsheet } from 'lucide-react';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, query, onSnapshot, updateDoc, doc, orderBy, where } from 'firebase/firestore';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ export default function ProjectMOU() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedProject, setSelectedProject] = React.useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = React.useState(false);
   const [mouData, setMouData] = React.useState({
     duration: '',
     cost: 0,
@@ -53,6 +54,11 @@ export default function ProjectMOU() {
       financialYear: project.mouDetails?.financialYear || ''
     });
     setIsEditModalOpen(true);
+  };
+
+  const handleViewMOU = (project: any) => {
+    setSelectedProject(project);
+    setIsViewModalOpen(true);
   };
 
   const handleSaveMOU = async () => {
@@ -96,6 +102,27 @@ export default function ProjectMOU() {
     toast.success("MOU Slip downloaded in Excel format");
   };
 
+  const downloadAllExcel = () => {
+    if (projects.length === 0) return;
+
+    const data = projects.map(project => ({
+      "Project Name": project.name,
+      "Financial Year": project.mouDetails?.financialYear || 'N/A',
+      "Duration": project.mouDetails?.duration || 'N/A',
+      "Cost (₹)": project.mouDetails?.cost || 0,
+      "Date of MOU": project.mouDetails?.dateOfMOU ? new Date(project.mouDetails.dateOfMOU).toLocaleDateString() : 'N/A',
+      "Date of Commencement": project.mouDetails?.dateOfCommencement ? new Date(project.mouDetails.dateOfCommencement).toLocaleDateString() : 'N/A',
+      "Extension Date": project.mouDetails?.extensionDate ? new Date(project.mouDetails.extensionDate).toLocaleDateString() : 'N/A',
+      "Reason of Extension": project.mouDetails?.reasonOfExtension || 'N/A'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "All Projects MOU");
+    XLSX.writeFile(wb, `CCL_All_Projects_MOU_${new Date().getFullYear()}.xlsx`);
+    toast.success("All Project MOUs downloaded in Excel format");
+  };
+
   const filteredProjects = projects.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -114,6 +141,13 @@ export default function ProjectMOU() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <Button 
+          onClick={downloadAllExcel}
+          className="h-12 px-8 rounded-2xl gap-3 font-black text-sm tracking-tight shadow-2xl shadow-primary/20 bg-green-600 hover:bg-green-700"
+        >
+          <FileSpreadsheet size={20} />
+          DOWNLOAD ALL MOU (EXCEL)
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -147,6 +181,15 @@ export default function ProjectMOU() {
               </div>
 
               <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  className="h-12 w-12 rounded-xl border-border/50 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all"
+                  onClick={() => handleViewMOU(project)}
+                  title="View MOU Slip"
+                >
+                  <Eye size={18} />
+                </Button>
                 <Button 
                   variant="outline" 
                   className="flex-1 h-12 rounded-xl gap-2 font-bold text-xs border-border/50 hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all"
@@ -245,6 +288,91 @@ export default function ProjectMOU() {
               Save MOU Details
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View MOU Slip Modal */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="max-w-2xl rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+          <div className="bg-primary p-8 text-primary-foreground relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                  <FileText size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tighter">PROJECT MOU SLIP</h2>
+                  <p className="text-xs font-mono uppercase tracking-widest opacity-70">Central Coalfields Limited</p>
+                </div>
+              </div>
+              <h3 className="text-3xl font-black tracking-tight leading-none mt-6">{selectedProject?.name}</h3>
+              <div className="flex gap-4 mt-6">
+                <Badge className="bg-white/20 text-white border-none px-4 py-1 rounded-full font-mono text-[10px] tracking-widest">
+                  FY: {selectedProject?.mouDetails?.financialYear || 'N/A'}
+                </Badge>
+                <Badge className="bg-white/20 text-white border-none px-4 py-1 rounded-full font-mono text-[10px] tracking-widest uppercase">
+                  ID: {selectedProject?.id?.slice(0, 8)}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 bg-card">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Duration</p>
+                  <p className="text-lg font-bold text-foreground">{selectedProject?.mouDetails?.duration || 'Not Specified'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Project Cost</p>
+                  <p className="text-lg font-bold text-primary">₹{selectedProject?.mouDetails?.cost?.toLocaleString() || '0'}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Date of MOU</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {selectedProject?.mouDetails?.dateOfMOU ? new Date(selectedProject.mouDetails.dateOfMOU).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Date of Commencement</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {selectedProject?.mouDetails?.dateOfCommencement ? new Date(selectedProject.mouDetails.dateOfCommencement).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Extension Date</p>
+                  <p className="text-lg font-bold text-orange-600">
+                    {selectedProject?.mouDetails?.extensionDate ? new Date(selectedProject.mouDetails.extensionDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'None'}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">Reason of Extension</p>
+                  <p className="text-sm font-medium italic text-muted-foreground leading-relaxed">
+                    {selectedProject?.mouDetails?.reasonOfExtension || 'No extension granted for this project.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-10 pt-8 border-t border-border/50 flex justify-between items-center">
+              <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground uppercase tracking-tighter">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                System Verified Document
+              </div>
+              <Button 
+                className="rounded-xl font-black text-xs tracking-widest gap-2"
+                onClick={() => downloadExcel(selectedProject)}
+              >
+                <Download size={14} />
+                DOWNLOAD SLIP
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

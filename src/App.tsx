@@ -14,7 +14,7 @@ import Settings from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
 import { auth, db, enableOffline } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, addDoc, collection as firestoreCollection } from 'firebase/firestore';
 
 import { ThemeProvider } from 'next-themes';
 
@@ -117,6 +117,19 @@ export default function App() {
               name: firebaseUser.displayName || 'User',
               role: ['prat@ccl.gov.in', 'john@ccl.gov.in', 'admin@ccl.gov.in'].includes(firebaseUser.email || '') ? 'ADMIN' : 'CCL_EMPLOYEE'
             });
+          }
+
+          // Log user access
+          try {
+            await addDoc(firestoreCollection(db, 'access_logs'), {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              name: firebaseUser.displayName || 'User',
+              timestamp: Date.now(),
+              date: new Date().toISOString().split('T')[0]
+            });
+          } catch (logError) {
+            console.error("Error logging access:", logError);
           }
         } catch (error) {
           console.error("Error fetching user profile:", error);

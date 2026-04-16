@@ -93,6 +93,12 @@ service cloud.firestore {
              data.status in ['PENDING', 'VERIFIED', 'REJECTED'];
     }
 
+    function isValidAccessLog(data) {
+      return data.uid == request.auth.uid &&
+             data.email is string &&
+             data.timestamp is number;
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -128,6 +134,11 @@ service cloud.firestore {
       allow update: if isAuthenticated() && isValidReport(request.resource.data) && 
                     request.resource.data.projectId == resource.data.projectId;
       allow delete: if isAuthenticated();
+    }
+
+    match /access_logs/{logId} {
+      allow create: if isAuthenticated() && isValidAccessLog(request.resource.data);
+      allow read: if isAdmin();
     }
   }
 }

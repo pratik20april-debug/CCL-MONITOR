@@ -15,11 +15,16 @@ import {
   Zap,
   Type,
   Type as FontIcon,
-  Paintbrush
+  Paintbrush,
+  History,
+  UserCheck,
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/src/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { db } from '../firebase';
 
 import { useTheme } from 'next-themes';
 import { AppContext } from '../App';
@@ -32,6 +37,30 @@ export default function Settings() {
     themeColor, setThemeColor,
     offlineMode, setOfflineMode
   } = React.useContext(AppContext);
+
+  const [accessLogs, setAccessLogs] = React.useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = React.useState(true);
+
+  React.useEffect(() => {
+    const tenDaysAgo = Date.now() - (10 * 24 * 60 * 60 * 1000);
+    const q = query(
+      collection(db, 'access_logs'),
+      where('timestamp', '>=', tenDaysAgo),
+      orderBy('timestamp', 'desc'),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAccessLogs(logs);
+      setLoadingLogs(false);
+    }, (error) => {
+      console.error("Error fetching access logs:", error);
+      setLoadingLogs(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleUpdate = () => {
     toast.promise(
@@ -230,6 +259,82 @@ export default function Settings() {
                   />
                 ))}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Access Control Panel */}
+        <Card className="border-none shadow-sm overflow-hidden bg-card md:col-span-2">
+          <CardHeader className="bg-slate-900 text-white pb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md shadow-lg">
+                  <History size={24} />
+                </div>
+                <div>
+                  <CardTitle className="text-white">Access Control Panel</CardTitle>
+                  <CardDescription className="text-slate-400">System access logs for the last 10 days</CardDescription>
+                </div>
+              </div>
+              <Badge variant="outline" className="border-slate-700 text-slate-400 font-mono">
+                {accessLogs.length} SESSIONS
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-muted-foreground font-black uppercase tracking-widest text-[10px]">
+                    <th className="text-left py-4 px-2">User</th>
+                    <th className="text-left py-4 px-2">Email</th>
+                    <th className="text-left py-4 px-2">Access Time</th>
+                    <th className="text-right py-4 px-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {loadingLogs ? (
+                    <tr>
+                      <td colSpan={4} className="py-10 text-center text-muted-foreground italic">
+                        Loading access logs...
+                      </td>
+                    </tr>
+                  ) : accessLogs.length > 0 ? (
+                    accessLogs.map((log) => (
+                      <tr key={log.id} className="group hover:bg-muted/30 transition-colors">
+                        <td className="py-4 px-2">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                              {log.name?.charAt(0) || 'U'}
+                            </div>
+                            <span className="font-bold">{log.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2 font-mono text-xs text-muted-foreground">{log.email}</td>
+                        <td className="py-4 px-2">
+                          <div className="flex flex-col">
+                            <span className="font-medium">{new Date(log.timestamp).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                              <Clock size={10} /> {new Date(log.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          <Badge className="bg-green-500/10 text-green-600 border-none rounded-full px-3 py-0.5 text-[10px] font-black">
+                            AUTHORIZED
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="py-10 text-center text-muted-foreground italic">
+                        No access logs found for the last 10 days.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
