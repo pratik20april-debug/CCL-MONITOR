@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/card';
 import { Input } from '@/src/components/ui/input';
-import { Plus, Search, ChevronRight, CheckCircle2, Upload, FileText, Eye } from 'lucide-react';
+import { Plus, Search, ChevronRight, CheckCircle2, Upload, FileText, Eye, ExternalLink } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -655,9 +655,9 @@ export default function Projects() {
                               size="icon"
                               className="w-8 h-8 rounded-full text-primary hover:bg-primary/10"
                               onClick={() => window.open(doc.url, '_blank')}
-                              title="View Document"
+                              title="Open Document"
                             >
-                              <Eye size={14} />
+                              <ExternalLink size={14} />
                             </Button>
                             <Button 
                               variant="ghost"

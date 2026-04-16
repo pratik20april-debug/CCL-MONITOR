@@ -24,8 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { Progress } from '@/src/components/ui/progress';
-import { MapPin, Activity, TrendingUp, DollarSign } from 'lucide-react';
+import { MapPin, Activity, TrendingUp, DollarSign, Search } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { Input } from '@/src/components/ui/input';
+import { Button } from '@/src/components/ui/button';
+import { toast } from 'sonner';
 
 // Fix for default marker icons in Leaflet with React
 // @ts-ignore
@@ -62,6 +65,7 @@ export default function GISDashboard() {
   const [projects, setProjects] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [mapCenter, setMapCenter] = React.useState<[number, number]>([23.3441, 85.3096]); // Ranchi center
+  const [searchQuery, setSearchQuery] = React.useState('');
 
   React.useEffect(() => {
     if (!auth.currentUser) return;
@@ -73,7 +77,7 @@ export default function GISDashboard() {
       
       // If there are projects with coordinates, center on the first one
       const withCoords = projectsData.filter(p => p.location?.lat && p.location?.lng);
-      if (withCoords.length > 0) {
+      if (withCoords.length > 0 && searchQuery === '') {
         setMapCenter([withCoords[0].location.lat, withCoords[0].location.lng]);
       }
       
@@ -84,6 +88,25 @@ export default function GISDashboard() {
 
     return () => unsubscribe();
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    const query = searchQuery.toLowerCase();
+    const found = projects.find(p => 
+      p.name.toLowerCase().includes(query) || 
+      p.location?.address?.toLowerCase().includes(query) ||
+      p.area?.toLowerCase().includes(query)
+    );
+
+    if (found && found.location?.lat && found.location?.lng) {
+      setMapCenter([found.location.lat, found.location.lng]);
+      toast.success(`Found: ${found.name}`);
+    } else {
+      toast.error("Project or location not found on map");
+    }
+  };
 
   const stats = {
     total: projects.length,
@@ -97,6 +120,22 @@ export default function GISDashboard() {
 
   return (
     <div className="space-y-8 h-full flex flex-col">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 className="text-3xl font-black tracking-tighter">GIS DASHBOARD</h2>
+        <form onSubmit={handleSearch} className="flex w-full md:w-auto gap-2">
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Input 
+              placeholder="Search project or location..." 
+              className="pl-10 rounded-xl bg-card/50 border-border/50"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button type="submit" className="rounded-xl font-bold">Search</Button>
+        </form>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="border-none shadow-lg bg-card/50 backdrop-blur-xl rounded-3xl">
           <CardContent className="p-6 flex items-center gap-4">

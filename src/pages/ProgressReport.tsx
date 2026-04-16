@@ -7,7 +7,7 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/src/components/ui/dialog';
 import { Progress } from '@/src/components/ui/progress';
-import { Download, Upload, FileText, MapPin, Camera, Plus, BarChart3 } from 'lucide-react';
+import { Download, Upload, FileText, MapPin, Camera, Plus, BarChart3, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/src/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
@@ -18,6 +18,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table as DocTable, TableRow as DocTableRow, TableCell as DocTableCell, WidthType, ImageRun } from 'docx';
 import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function ProgressReport() {
   const [reports, setReports] = React.useState<any[]>([]);
@@ -258,8 +260,39 @@ export default function ProgressReport() {
     toast.success("Detailed report exported to Word");
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const element = document.getElementById('printable-report');
+    if (!element) return;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false
+    });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`CSR_Report_${selectedDetailedReport?.projectName || 'Project'}.pdf`);
+    toast.success("Beautiful PDF report generated!");
+  };
+
+  const handleProjectSelect = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      setFormData({
+        ...formData,
+        projectId,
+        area: project.location?.address || '',
+        physicalProgress: project.physicalProgress || 0,
+        financialProgress: project.financialProgress || 0
+      });
+    } else {
+      setFormData({ ...formData, projectId });
+    }
   };
 
   const handleSubmitReport = async (e: React.FormEvent) => {
@@ -320,7 +353,7 @@ export default function ProgressReport() {
                 <Label className="text-sm font-semibold">Select Project</Label>
                 <Select 
                   value={formData.projectId} 
-                  onValueChange={(val) => setFormData({ ...formData, projectId: val })}
+                  onValueChange={handleProjectSelect}
                 >
                   <SelectTrigger className="bg-slate-50">
                     <SelectValue placeholder="Choose project" />
@@ -669,101 +702,134 @@ export default function ProgressReport() {
           </DialogHeader>
 
           {selectedDetailedReport && (
-            <div id="printable-report" className="py-6 space-y-8 print:p-0">
-              <div className="text-center space-y-2 mb-8">
-                <h2 className="text-3xl font-black tracking-tighter text-primary">CENTRAL COALFIELDS LIMITED</h2>
-                <p className="text-sm font-bold text-muted-foreground uppercase tracking-[0.3em]">CSR Monitoring & Impact Assessment</p>
-                <div className="h-1 w-24 bg-primary mx-auto rounded-full" />
+            <div id="printable-report" className="py-10 px-12 space-y-10 print:p-0 bg-white text-slate-900 rounded-[2rem] border shadow-sm">
+              <div className="flex justify-between items-start border-b-2 border-primary/20 pb-8">
+                <div className="space-y-1">
+                  <h2 className="text-4xl font-black tracking-tighter text-primary">CCL CSR SLIP</h2>
+                  <p className="text-xs font-mono uppercase tracking-[0.4em] text-muted-foreground">Progress Verification Report</p>
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Report ID</p>
+                  <p className="text-sm font-mono font-bold">#{selectedDetailedReport.id.slice(0, 12).toUpperCase()}</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="space-y-8">
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Project Overview</h4>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-sm text-muted-foreground font-medium">Project Name</span>
-                        <span className="text-sm font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.name}</span>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      Project Information
+                    </h4>
+                    <div className="space-y-4 bg-slate-50/50 p-6 rounded-3xl border border-slate-100">
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Project Name</span>
+                        <p className="text-base font-black leading-tight">{projects.find(p => p.id === selectedDetailedReport.projectId)?.name}</p>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-sm text-muted-foreground font-medium">Sector</span>
-                        <span className="text-sm font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.sector || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-sm text-muted-foreground font-medium">Current Status</span>
-                        <Badge className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.status}</Badge>
+                      <div className="grid grid-cols-2 gap-4 pt-2">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Sector</span>
+                          <p className="text-sm font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.sector || 'N/A'}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Status</span>
+                          <p className="text-sm font-bold text-primary">{projects.find(p => p.id === selectedDetailedReport.projectId)?.status}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">MOU Compliance</h4>
-                    <div className="p-4 rounded-2xl bg-muted/50 border space-y-3">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">MOU Cost</span>
-                        <span className="font-bold">₹{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.cost?.toLocaleString() || '0'}</span>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      MOU Compliance
+                    </h4>
+                    <div className="p-6 rounded-3xl bg-slate-50/50 border border-slate-100 space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">MOU Cost</span>
+                        <span className="text-sm font-black">₹{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.cost?.toLocaleString() || '0'}</span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Duration</span>
-                        <span className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.duration || 'N/A'}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Duration</span>
+                        <span className="text-sm font-black">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.duration || 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground">Commencement</span>
-                        <span className="font-bold">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.dateOfCommencement ? new Date(projects.find(p => p.id === selectedDetailedReport.projectId).mouDetails.dateOfCommencement).toLocaleDateString() : 'N/A'}</span>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Commencement</span>
+                        <span className="text-sm font-black">{projects.find(p => p.id === selectedDetailedReport.projectId)?.mouDetails?.dateOfCommencement ? new Date(projects.find(p => p.id === selectedDetailedReport.projectId).mouDetails.dateOfCommencement).toLocaleDateString() : 'N/A'}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Progress Analysis</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      Execution Progress
+                    </h4>
                     <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-1">Physical</p>
-                        <p className="text-xl font-black">{selectedDetailedReport.physicalProgress}%</p>
+                      <div className="p-6 rounded-3xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Physical</p>
+                        <p className="text-3xl font-black">{selectedDetailedReport.physicalProgress}%</p>
                       </div>
-                      <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100">
-                        <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 mb-1">Financial</p>
-                        <p className="text-xl font-black">{selectedDetailedReport.financialProgress}%</p>
+                      <div className="p-6 rounded-3xl bg-slate-900 text-white shadow-lg shadow-slate-900/20">
+                        <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">Financial</p>
+                        <p className="text-3xl font-black">{selectedDetailedReport.financialProgress}%</p>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Work Description</h4>
-                    <p className="text-sm leading-relaxed text-slate-700 bg-slate-50 p-4 rounded-2xl border italic">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      Work Description
+                    </h4>
+                    <div className="text-sm leading-relaxed text-slate-700 bg-slate-50/50 p-6 rounded-3xl border border-slate-100 italic min-h-[120px]">
                       "{selectedDetailedReport.progressText}"
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Geotagged Evidence</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-4">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  Geotagged Evidence
+                </h4>
+                <div className="grid grid-cols-3 gap-4">
                   {selectedDetailedReport.geotaggedPhotos?.map((p: any, i: number) => (
                     <div key={i} className="space-y-2">
-                      <div className="aspect-video rounded-2xl overflow-hidden border-2 border-white shadow-md">
+                      <div className="aspect-video rounded-2xl overflow-hidden border-4 border-white shadow-xl">
                         <img 
                           src={typeof p === 'string' ? p : p.url} 
                           className="w-full h-full object-cover" 
                           alt="Evidence"
+                          referrerPolicy="no-referrer"
                         />
                       </div>
                       {p.lat && (
-                        <p className="text-[8px] font-mono text-muted-foreground text-center">
-                          LAT: {p.lat.toFixed(6)} | LNG: {p.lng.toFixed(6)}
-                        </p>
+                        <div className="flex items-center justify-center gap-1 text-[8px] font-mono text-muted-foreground bg-slate-50 py-1 rounded-full border border-slate-100">
+                          <MapPin size={8} />
+                          {p.lat.toFixed(6)}, {p.lng.toFixed(6)}
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="pt-8 border-t flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                <span>Report ID: {selectedDetailedReport.id}</span>
-                <span>Generated on: {new Date().toLocaleString()}</span>
+              <div className="pt-10 border-t-2 border-slate-100 flex justify-between items-end">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Verification Status</p>
+                  <div className="flex items-center gap-2 text-green-600 font-black text-sm">
+                    <CheckCircle2 size={16} />
+                    {selectedDetailedReport.status}
+                  </div>
+                </div>
+                <div className="text-right space-y-1">
+                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Generated On</p>
+                  <p className="text-xs font-bold">{new Date().toLocaleString('en-IN', { dateStyle: 'long', timeStyle: 'short' })}</p>
+                </div>
               </div>
             </div>
           )}

@@ -105,7 +105,10 @@ export default function ProjectMOU() {
   const downloadAllExcel = () => {
     if (projects.length === 0) return;
 
-    const data = projects.map(project => ({
+    const wb = XLSX.utils.book_new();
+
+    // Summary Sheet
+    const summaryData = projects.map(project => ({
       "Project Name": project.name,
       "Financial Year": project.mouDetails?.financialYear || 'N/A',
       "Duration": project.mouDetails?.duration || 'N/A',
@@ -115,12 +118,31 @@ export default function ProjectMOU() {
       "Extension Date": project.mouDetails?.extensionDate ? new Date(project.mouDetails.extensionDate).toLocaleDateString() : 'N/A',
       "Reason of Extension": project.mouDetails?.reasonOfExtension || 'N/A'
     }));
+    const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
 
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "All Projects MOU");
-    XLSX.writeFile(wb, `CCL_All_Projects_MOU_${new Date().getFullYear()}.xlsx`);
-    toast.success("All Project MOUs downloaded in Excel format");
+    // Individual Sheets for each project
+    projects.forEach(project => {
+      const projectData = [
+        { "Field": "Project Name", "Value": project.name },
+        { "Field": "Financial Year", "Value": project.mouDetails?.financialYear || 'N/A' },
+        { "Field": "Duration", "Value": project.mouDetails?.duration || 'N/A' },
+        { "Field": "Cost (₹)", "Value": project.mouDetails?.cost || 0 },
+        { "Field": "Date of MOU", "Value": project.mouDetails?.dateOfMOU ? new Date(project.mouDetails.dateOfMOU).toLocaleDateString() : 'N/A' },
+        { "Field": "Date of Commencement", "Value": project.mouDetails?.dateOfCommencement ? new Date(project.mouDetails.dateOfCommencement).toLocaleDateString() : 'N/A' },
+        { "Field": "Extension Date", "Value": project.mouDetails?.extensionDate ? new Date(project.mouDetails.extensionDate).toLocaleDateString() : 'N/A' },
+        { "Field": "Reason of Extension", "Value": project.mouDetails?.reasonOfExtension || 'N/A' },
+        { "Field": "Status", "Value": project.status || 'N/A' },
+        { "Field": "Sector", "Value": project.sector || 'N/A' }
+      ];
+      const ws = XLSX.utils.json_to_sheet(projectData);
+      // Sheet names must be <= 31 chars and unique
+      const sheetName = project.name.substring(0, 25).replace(/[\\/?*[\]]/g, '_') + '_' + project.id.slice(0, 4);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    XLSX.writeFile(wb, `CCL_MOU_Detailed_Report_${new Date().getFullYear()}.xlsx`);
+    toast.success("All Project MOUs downloaded with separate sheets for each project");
   };
 
   const filteredProjects = projects.filter(p => 
