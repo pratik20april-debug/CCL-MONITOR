@@ -29,7 +29,8 @@ import { cn } from '@/src/lib/utils';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, onSnapshot, collectionGroup, query, orderBy, limit, where } from 'firebase/firestore';
 import { AppContext } from '../App';
-import { Languages, Globe } from 'lucide-react';
+import { Languages, Globe, BrainCircuit } from 'lucide-react';
+import MitraAI from '../components/AI/MitraAI';
 
 const translations = {
   en: {
@@ -117,7 +118,7 @@ const StatCard = ({ title, value, icon: Icon, trend }: any) => (
   </Card>
 );
 
-export default function Home() {
+export default function Home({ onNavigate }: { onNavigate: (tabId: string) => void }) {
   const { language, setLanguage } = React.useContext(AppContext);
   const t = translations[language];
   const [stats, setStats] = React.useState({
@@ -398,6 +399,8 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+
+      <MitraAI onNavigate={onNavigate} />
     </div>
   );
 }

@@ -95,9 +95,28 @@
         },
         "createdAt": { "type": "number" },
         "updatedAt": { "type": "number" },
-        "createdBy": { "type": "string" }
+        "createdBy": { "type": "string" },
+        "boundary": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "number" } },
+          "description": "Array of coordinates [lat, lng] for project area boundary"
+        }
       },
       "required": ["id", "name", "status", "createdAt", "updatedAt", "createdBy"]
+    },
+    "BudgetTracker": {
+      "title": "CSR Budget Tracker",
+      "description": "Tracks project budget allotment and expenditure",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "projectId": { "type": "string" },
+        "projectName": { "type": "string" },
+        "allocatedFund": { "type": "number" },
+        "expenditure": { "type": "number" },
+        "lastUpdated": { "type": "number" }
+      },
+      "required": ["id", "projectId", "allocatedFund", "expenditure"]
     },
     "ProgressReport": {
       "title": "Progress Report",
@@ -125,6 +144,42 @@
         "status": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"] }
       },
       "required": ["id", "projectId", "date", "area", "progressText", "submittedBy", "status"]
+    },
+    "NGO": {
+      "title": "NGO Partner",
+      "description": "Information about verified NGO partners and their ratings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "rating": { "type": "number" },
+        "status": { "type": "string", "enum": ["ACTIVE", "INACTIVE", "BLACKLISTED"] },
+        "approvalStatus": { "type": "string", "enum": ["PENDING", "APPROVED", "REJECTED"] },
+        "website": { "type": "string" },
+        "focusArea": { "type": "string" },
+        "registrationNumber": { "type": "string" },
+        "mobile": { "type": "string" },
+        "invitationCode": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "verifiedAt": { "type": "number" },
+        "verifiedBy": { "type": "string" }
+      },
+      "required": ["id", "name", "approvalStatus", "createdAt"]
+    },
+    "Invitation": {
+      "title": "Special Invitation",
+      "description": "Unique invitation links for NGO registration",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string", "description": "Unique alphanumeric code" },
+        "targetNGO": { "type": "string", "description": "Intended NGO name (optional hint)" },
+        "createdAt": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["PENDING", "USED", "EXPIRED"] },
+        "usedBy": { "type": "string", "description": "NGO ID that used this link" }
+      },
+      "required": ["id", "code", "createdAt", "status"]
     }
   },
   "firestore": {
@@ -139,6 +194,18 @@
     "/projects/{projectId}/reports/{reportId}": {
       "schema": "ProgressReport",
       "description": "Progress reports for a specific project"
+    },
+    "/budget_tracking/{recordId}": {
+      "schema": "BudgetTracker",
+      "description": "Budget tracking records"
+    },
+    "/ngos/{ngoId}": {
+      "schema": "NGO",
+      "description": "NGO partner records"
+    },
+    "/invitations/{invitationId}": {
+      "schema": "Invitation",
+      "description": "Registration invitation links"
     }
   }
 }

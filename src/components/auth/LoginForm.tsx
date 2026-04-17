@@ -14,26 +14,36 @@ const schema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters")
 });
 
-export default function LoginForm() {
+export default function LoginForm({ isNGO = false }: { isNGO?: boolean }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(schema)
   });
 
   const onSubmit = async (data: any) => {
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      let email = data.email;
+      // If it looks like a mobile number and it's NGO login, convert to pseudo-email
+      if (isNGO && /^\d{10}$/.test(email)) {
+        email = `ngo_${email}@ccl.csr`;
+      }
+      await signInWithEmailAndPassword(auth, email, data.password);
       toast.success("Login successful!");
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error(error.message || "Invalid email or password");
+      toast.error(error.message || "Invalid credentials");
     }
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="login-email">Email ID</Label>
-        <Input id="login-email" type="email" {...register('email')} placeholder="john@example.com" />
+        <Label htmlFor="login-email">{isNGO ? "Registered Mobile or Email" : "Email ID"}</Label>
+        <Input 
+          id="login-email" 
+          type={isNGO ? "text" : "email"} 
+          {...register('email')} 
+          placeholder={isNGO ? "9988776655" : "john@example.com"} 
+        />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message as string}</p>}
       </div>
       

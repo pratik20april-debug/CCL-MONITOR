@@ -9,6 +9,15 @@ import ProjectStatus from './pages/ProjectStatus';
 import CompletedProjects from './pages/CompletedProjects';
 import EliminatedProjects from './pages/EliminatedProjects';
 import ProjectMOU from './pages/ProjectMOU';
+import BudgetTracker from './pages/BudgetTracker';
+import NGOManagement from './pages/NGOManagement';
+import NGOTaskManager from './pages/NGOTaskManager';
+import NGOEvidenceUpload from './pages/NGOEvidenceUpload';
+import NGOFundStatus from './pages/NGOFundStatus';
+import NGODocumentUpload from './pages/NGODocumentUpload';
+import NGOQueriesSupport from './pages/NGOQueriesSupport';
+import CSRInvitations from './pages/CSRInvitations';
+import NGORegistration from './pages/NGORegistration';
 import GISDashboard from './pages/GISDashboard';
 import Settings from './pages/Settings';
 import { motion, AnimatePresence } from 'motion/react';
@@ -188,6 +197,14 @@ export default function App() {
   }
 
   if (!user) {
+    if (window.location.pathname === '/register-ngo') {
+      return (
+        <>
+          <NGORegistration />
+          <Toaster position="top-right" richColors />
+        </>
+      );
+    }
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
         {/* Background Decorations */}
@@ -267,9 +284,17 @@ export default function App() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'home' && <Home />}
+              {activeTab === 'home' && <Home onNavigate={setActiveTab} />}
               {activeTab === 'projects' && <Projects />}
               {activeTab === 'mou' && <ProjectMOU />}
+              {activeTab === 'budget' && <BudgetTracker />}
+              {activeTab === 'ngos' && <NGOManagement />}
+              {activeTab === 'ngo-tasks' && <NGOTaskManager />}
+              {activeTab === 'ngo-evidence' && <NGOEvidenceUpload />}
+              {activeTab === 'ngo-funds' && <NGOFundStatus />}
+              {activeTab === 'ngo-docs' && <NGODocumentUpload />}
+              {activeTab === 'ngo-support' && <NGOQueriesSupport />}
+              {activeTab === 'invitations' && <CSRInvitations />}
               {activeTab === 'reports' && <ProgressReport />}
               {activeTab === 'status' && <ProjectStatus />}
               {activeTab === 'completed' && <CompletedProjects />}

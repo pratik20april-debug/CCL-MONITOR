@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, 
   Briefcase, 
@@ -11,7 +11,17 @@ import {
   Activity,
   CheckCircle2,
   Settings as SettingsIcon,
-  Trash2
+  Trash2,
+  Wallet,
+  Building2,
+  ListTodo,
+  Camera,
+  IndianRupee,
+  FileUp,
+  HelpCircle,
+  ChevronDown,
+  ChevronRight,
+  Link as LinkIcon
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { cn } from '@/src/lib/utils';
@@ -55,18 +65,55 @@ export default function DashboardLayout({
   onLogout: () => void;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [expandedSections, setExpandedSections] = React.useState<string[]>(['CSR', 'NGO']);
 
-  const navItems = [
-    { id: 'home', label: 'Home', icon: LayoutDashboard },
-    { id: 'projects', label: 'Projects', icon: Briefcase },
-    { id: 'mou', label: 'Project MOU', icon: FileText },
-    { id: 'reports', label: 'Progress Report', icon: FileText },
-    { id: 'status', label: 'Project Status', icon: Activity },
-    { id: 'completed', label: 'Completed Projects', icon: CheckCircle2 },
-    { id: 'gis', label: 'GIS Dashboard', icon: MapIcon },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-    { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2, adminOnly: true },
-  ].filter(item => !item.adminOnly || userRole === 'ADMIN');
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section) 
+        : [...prev, section]
+    );
+  };
+
+  const navSections = [
+    {
+      title: 'Navigation',
+      items: [
+        { id: 'home', label: 'Home', icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: 'CSR',
+      items: [
+        { id: 'projects', label: 'Projects', icon: Briefcase },
+        { id: 'mou', label: 'Project MOU', icon: FileText },
+        { id: 'budget', label: 'Budget Tracker', icon: Wallet },
+        { id: 'status', label: 'Project Status', icon: Activity },
+        { id: 'reports', label: 'Project Report', icon: FileText },
+        { id: 'completed', label: 'Completed Project', icon: CheckCircle2 },
+        { id: 'gis', label: 'Project Overview', icon: MapIcon },
+        { id: 'invitations', label: 'Invitation Link', icon: LinkIcon, adminOnly: true },
+      ]
+    },
+    {
+      title: 'NGO',
+      items: [
+        { id: 'ngos', label: 'NGO Partner', icon: Building2 },
+        { id: 'ngo-tasks', label: 'Task Manager', icon: ListTodo },
+        { id: 'ngo-evidence', label: 'Evidence Upload', icon: Camera },
+        { id: 'ngo-funds', label: 'Fund Status', icon: IndianRupee },
+        { id: 'ngo-docs', label: 'Document Upload', icon: FileUp },
+        { id: 'ngo-support', label: 'Queries and Support', icon: HelpCircle },
+      ]
+    },
+    {
+      title: 'Admin',
+      items: [
+        { id: 'settings', label: 'Settings', icon: SettingsIcon },
+        { id: 'eliminated', label: 'Eliminated Projects', icon: Trash2, adminOnly: true },
+      ]
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background flex overflow-hidden tech-grid">
@@ -96,16 +143,59 @@ export default function DashboardLayout({
           </Button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-2 mt-8">
-          {navItems.map((item) => (
-            <NavItem
-              key={item.id}
-              icon={item.icon}
-              label={isSidebarOpen ? item.label : ''}
-              active={activeTab === item.id}
-              onClick={() => setActiveTab(item.id)}
-            />
-          ))}
+        <nav className="flex-1 px-4 space-y-6 mt-8 overflow-y-auto no-scrollbar pb-10">
+          {navSections.map((section) => {
+            const filteredItems = section.items.filter(item => !item.adminOnly || userRole === 'ADMIN');
+            if (filteredItems.length === 0) return null;
+            
+            const isExpanded = expandedSections.includes(section.title);
+            const isCategory = section.title === 'CSR' || section.title === 'NGO';
+
+            return (
+              <div key={section.title} className="space-y-1">
+                {isSidebarOpen && (
+                  <button 
+                    onClick={() => isCategory && toggleSection(section.title)}
+                    className={cn(
+                      "flex items-center justify-between w-full px-4 mb-2 group",
+                      isCategory ? "cursor-pointer" : "cursor-default"
+                    )}
+                  >
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/50 group-hover:text-primary transition-colors">
+                      {section.title}
+                    </span>
+                    {isCategory && (
+                      <div className="text-muted-foreground/30 group-hover:text-primary transition-colors">
+                        {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      </div>
+                    )}
+                  </button>
+                )}
+                
+                <AnimatePresence initial={false}>
+                  {(!isCategory || isExpanded || !isSidebarOpen) && (
+                    <motion.div
+                      initial={isCategory ? { height: 0, opacity: 0 } : false}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-1 overflow-hidden"
+                    >
+                      {filteredItems.map((item) => (
+                        <NavItem
+                          key={item.id}
+                          icon={item.icon}
+                          label={isSidebarOpen ? item.label : ''}
+                          active={activeTab === item.id}
+                          onClick={() => setActiveTab(item.id)}
+                        />
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-border/50">

@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
-import { ShieldCheck, User, KeyRound } from 'lucide-react';
+import { ShieldCheck, User, KeyRound, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
 import CCLRegistrationForm from './CCLRegistrationForm';
 import LoginForm from './LoginForm';
@@ -26,13 +26,20 @@ export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (co
   return (
     <div className="w-full max-w-md mx-auto">
       <Tabs defaultValue="employee" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8 h-14 p-1 bg-muted/50 rounded-2xl">
+        <TabsList className="grid w-full grid-cols-3 mb-8 h-14 p-1 bg-muted/50 rounded-2xl">
           <TabsTrigger 
             value="employee" 
             className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-2"
           >
             <User size={16} />
             Employee
+          </TabsTrigger>
+          <TabsTrigger 
+            value="ngo" 
+            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-2"
+          >
+            <Building2 size={16} />
+            NGO
           </TabsTrigger>
           <TabsTrigger 
             value="admin" 
@@ -78,6 +85,28 @@ export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (co
               </Card>
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="ngo">
+          <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl font-black tracking-tight">NGO Partner Login</CardTitle>
+              <CardDescription>
+                Access your designated dashboard and project tools
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LoginForm isNGO />
+              <div className="mt-6 pt-6 border-t border-border/50 text-center">
+                <p className="text-xs text-muted-foreground">
+                  NGO registration is strictly by invitation link only.
+                </p>
+                <p className="text-[10px] mt-2 font-bold uppercase text-primary/60">
+                  Contact CSR Department for access links
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="admin">
