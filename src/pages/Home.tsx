@@ -14,7 +14,12 @@ import {
   ArrowRight,
   Play,
   Video,
-  X as CloseIcon
+  X as CloseIcon,
+  Shield,
+  Heart,
+  Globe2,
+  Navigation,
+  ExternalLink as LinkIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -102,6 +107,76 @@ const chartData = [
   { name: 'May', projects: 18, impact: 6200 },
   { name: 'Jun', projects: 24, impact: 7800 },
 ];
+
+const CSRPolicySection = ({ t }: { t: any }) => {
+  const pillars = [
+    { 
+      id: 'healthcare', 
+      title: 'Healthcare', 
+      desc: 'Mobile medical vans and village clinics.', 
+      icon: Heart, 
+      color: 'bg-rose-500', 
+      policy: 'Providing accessible healthcare to marginalized communities in mining areas.' 
+    },
+    { 
+      id: 'education', 
+      title: 'Education', 
+      desc: 'Digital classrooms and scholarship programs.', 
+      icon: Briefcase, 
+      color: 'bg-indigo-500', 
+      policy: 'Empowering children with quality education and vocational training skills.' 
+    },
+    { 
+      id: 'sustainable', 
+      title: 'Environment', 
+      desc: 'Afforestation and water harvesting.', 
+      icon: Globe2, 
+      color: 'bg-emerald-500', 
+      policy: 'Ensuring eco-friendly mining and restoring biodiversity in Jharkhand.' 
+    },
+    { 
+      id: 'infrastructure', 
+      title: 'Infra', 
+      desc: 'Village roads and solar lighting.', 
+      icon: Activity, 
+      color: 'bg-orange-500', 
+      policy: 'Developing robust infrastructure for last-mile connectivity and energy.' 
+    }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
+      {pillars.map((pillar, idx) => (
+        <motion.div
+          key={pillar.id}
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: idx * 0.1 }}
+          viewport={{ once: true }}
+          className="group relative"
+        >
+          <div className="h-full p-8 rounded-[2.5rem] bg-white border border-border/50 shadow-xl shadow-secondary/5 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2">
+            <div className={cn("inline-flex items-center justify-center w-14 h-14 rounded-2xl text-white mb-6 shadow-lg", pillar.color)}>
+              <pillar.icon size={24} />
+            </div>
+            <h4 className="text-xl font-black tracking-tight text-slate-800 uppercase mb-2">{pillar.title}</h4>
+            <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6 italic">{pillar.desc}</p>
+            
+            <div className="pt-6 border-t border-slate-100 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+               <span className="text-[10px] font-black uppercase tracking-widest text-primary block mb-2">Policy Statement</span>
+               <p className="text-[11px] font-bold text-slate-400 uppercase leading-snug">{pillar.policy}</p>
+            </div>
+
+            {/* Decorative background number */}
+            <span className="absolute -bottom-4 -right-2 text-8xl font-black text-slate-50 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+              0{idx + 1}
+            </span>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
 
 const StatCard = ({ title, value, icon: Icon, trend }: any) => (
   <Card className="overflow-hidden border border-border/50 shadow-sm bg-card/40 backdrop-blur-xl hover:shadow-2xl hover:shadow-primary/10 hover:border-primary/30 transition-all duration-500 group relative">
@@ -232,27 +307,27 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
       {/* App Tour Video at Top */}
       <section className="relative pt-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-transparent border-none rounded-[3.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.05)]">
-          <div className="lg:col-span-12 relative h-[80vh] min-h-[600px] group cursor-pointer overflow-hidden rounded-[3.5rem]" onClick={() => setShowVideo(true)}>
+          <div className="lg:col-span-12 relative h-[70vh] min-h-[550px] group cursor-pointer overflow-hidden rounded-[3.5rem]" onClick={() => setShowVideo(true)}>
              <img 
                 src="https://picsum.photos/seed/ccl-mining-ranchi/1920/1080" 
                 alt="System Preview" 
                 className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent flex items-center p-12 lg:p-24">
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-transparent flex items-center p-12 lg:p-24">
                 <div className="max-w-2xl space-y-8">
                   <div className="inline-flex items-center gap-3 px-5 py-2 bg-primary/20 backdrop-blur-xl rounded-full border border-white/20">
                     <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
-                    <span className="text-xs font-black uppercase tracking-[0.35em] text-white">Easy Guide</span>
+                    <span className="text-xs font-black uppercase tracking-[0.35em] text-white">Interactive Visuals</span>
                   </div>
                   
                   <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.95] text-white uppercase drop-shadow-2xl">
-                    See how it <br />
-                    <span className="text-primary italic">works</span>
+                    Smart CSR <br />
+                    <span className="text-primary italic">Intelligence</span>
                   </h1>
                   
                   <p className="text-xl text-white/80 font-medium leading-relaxed italic max-w-lg">
-                    "Watch a short video to learn how to use this app with simple voice guidance."
+                    "Experience our advanced tracking system through a beautiful interactive walkthrough."
                   </p>
                   
                   <div className="flex flex-wrap gap-6 pt-4">
@@ -262,22 +337,57 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
                     >
                       <div className="absolute inset-x-0 bottom-0 h-1 bg-primary/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform origin-left" />
                       <Play className="mr-4 fill-current group-hover/btn:animate-pulse" size={24} />
-                      Watch Video
+                      Start Experience
                     </Button>
-                    <div className="flex items-center gap-6 text-white/60 bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 group/vo">
-                       <div className="relative">
-                         <div className="absolute inset-0 bg-primary rounded-full blur-md opacity-20 animate-pulse" />
-                         <Users className="text-primary group-hover/vo:scale-110 transition-transform" size={20} />
-                       </div>
-                       <div className="flex flex-col">
-                         <span className="text-xs font-black uppercase tracking-[0.3em] text-white">App Assistant</span>
-                         <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Voice Guided Tour</span>
-                       </div>
-                    </div>
                   </div>
                 </div>
               </div>
           </div>
+        </div>
+
+        {/* Floating Website Link Cards - Direct Links */}
+        <div className="absolute -bottom-10 left-12 right-12 z-10 hidden lg:grid grid-cols-2 gap-6">
+           <motion.a
+             href="https://www.coalindia.in"
+             target="_blank"
+             rel="noopener noreferrer"
+             whileHover={{ y: -5 }}
+             className="flex items-center justify-between p-6 bg-white/80 backdrop-blur-3xl rounded-3xl shadow-2xl border border-white/40 group overflow-hidden"
+           >
+              <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                    <Globe size={32} />
+                 </div>
+                 <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Coal India Limited</span>
+                    <h3 className="text-xl font-black tracking-tighter uppercase text-slate-800">CIL Official Website</h3>
+                 </div>
+              </div>
+              <div className="w-12 h-12 rounded-full border-2 border-primary/20 flex items-center justify-center text-primary group-hover:border-primary transition-colors">
+                 <ArrowRight size={20} />
+              </div>
+           </motion.a>
+
+           <motion.a
+             href="https://www.centralcoalfields.in"
+             target="_blank"
+             rel="noopener noreferrer"
+             whileHover={{ y: -5 }}
+             className="flex items-center justify-between p-6 bg-slate-900 rounded-3xl shadow-2xl border border-slate-800 group"
+           >
+              <div className="flex items-center gap-6">
+                 <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center text-white group-hover:bg-primary transition-all duration-500">
+                    <Navigation size={32} />
+                 </div>
+                 <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">CCL Ranchi</span>
+                    <h3 className="text-xl font-black tracking-tighter uppercase text-white">CCL Ranchi Portal</h3>
+                 </div>
+              </div>
+              <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-white group-hover:border-primary transition-colors">
+                 <ArrowRight size={20} />
+              </div>
+           </motion.a>
         </div>
 
         {/* App Tour Video Overlay */}
@@ -285,6 +395,20 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
           isOpen={showVideo} 
           onClose={() => setShowVideo(false)} 
         />
+      </section>
+
+      {/* CSR Policy Showcase Section */}
+      <section className="pt-20 px-4 space-y-10">
+         <div className="text-center space-y-4">
+            <Badge variant="outline" className="px-6 py-2 rounded-full border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.4em]">Corporate Social Responsibility</Badge>
+            <h2 className="text-5xl lg:text-7xl font-black tracking-tighter uppercase text-slate-900 leading-none">
+              Governance & <br />
+              <span className="text-primary italic">Social Impact</span>
+            </h2>
+            <p className="text-slate-500 font-medium italic max-w-xl mx-auto uppercase text-xs tracking-widest">CCL CSR Policy focuses on holistic development through structured pillars</p>
+         </div>
+
+         <CSRPolicySection t={t} />
       </section>
 
       {/* Top Bar: Language & Branding */}
@@ -316,49 +440,97 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
         </div>
       </div>
 
-      {/* Hero Section: Vision, Mission (Condensed for beauty) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 px-4">
-        <div className="lg:col-span-8">
-           <Card className="border-none shadow-2xl bg-primary text-primary-foreground overflow-hidden h-full rounded-[3rem] relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
-              <CardContent className="p-16 relative space-y-12">
+      {/* Interactive Vision/Mission/Philosophy Section */}
+      <section className="px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-8">
+             <div className="relative h-full">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={language}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="h-full"
+                  >
+                    <Card className="border-none shadow-2xl bg-primary text-primary-foreground overflow-hidden rounded-[3.5rem] relative h-full">
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+                      <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+                      
+                      <CardContent className="p-12 lg:p-20 relative flex flex-col justify-between h-full space-y-12">
+                        <div className="space-y-8">
+                          <div className="flex items-center gap-4">
+                            <Badge className="bg-white/20 text-white border-none px-6 py-2 text-[10px] font-black tracking-[0.3em] uppercase">Miniratna Category-I</Badge>
+                            <div className="h-px flex-1 bg-white/20" />
+                          </div>
+                          <h2 className="text-5xl lg:text-7xl font-black tracking-tighter leading-none text-white uppercase italic">
+                            {t.welcome}
+                          </h2>
+                          <div className="flex items-start gap-8">
+                             <Shield className="text-white/40 shrink-0 mt-1" size={40} />
+                             <p className="text-2xl font-medium text-white/90 max-w-2xl leading-relaxed italic pr-12">
+                                "{t.philosophyText}"
+                             </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-white/10">
+                          <motion.div 
+                            whileHover={{ x: 10 }}
+                            className="space-y-4 cursor-default"
+                          >
+                            <div className="flex items-center gap-3">
+                               <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full" />
+                               <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/50">{t.vision}</h3>
+                            </div>
+                            <p className="text-sm font-bold leading-relaxed tracking-tight text-white/90 uppercase">{t.visionText}</p>
+                          </motion.div>
+                          <motion.div 
+                            whileHover={{ x: 10 }}
+                            className="space-y-4 cursor-default"
+                          >
+                            <div className="flex items-center gap-3">
+                               <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full" />
+                               <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-white/50">{t.mission}</h3>
+                            </div>
+                            <p className="text-sm font-medium leading-relaxed text-white/80">{t.missionText}</p>
+                          </motion.div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </AnimatePresence>
+             </div>
+          </div>
+          
+          <div className="lg:col-span-4 flex flex-col gap-8">
+             <motion.div
+               whileHover={{ scale: 1.02 }}
+               className="flex-1 p-10 rounded-[3.5rem] bg-white border border-border/50 shadow-2xl flex flex-col justify-between relative overflow-hidden group"
+             >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-primary/10 transition-colors" />
                 <div className="space-y-6">
-                  <Badge className="bg-white/20 text-white border-none px-4 py-1.5 text-xs font-black tracking-[0.25em] uppercase mb-4">Miniratna Category-I Company</Badge>
-                  <h2 className="text-5xl font-black tracking-tighter leading-none text-white uppercase italic">
-                    {t.welcome}
-                  </h2>
-                  <p className="text-xl font-medium text-white/80 max-w-xl leading-relaxed">
-                    {t.philosophyText}
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-white/60">{t.vision}</h3>
-                    <p className="text-sm font-bold leading-relaxed italic text-white/90">"{t.visionText}"</p>
+                  <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary shadow-inner">
+                    <Users size={40} />
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-white/60">{t.mission}</h3>
-                    <p className="text-sm font-medium leading-relaxed text-white/80">{t.missionText}</p>
+                  <div className="space-y-3">
+                    <h4 className="text-3xl font-black tracking-tighter text-slate-800 uppercase">Impact Metrics</h4>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed italic">Real-time mapping of socio-economic progress across Jharkhand's mining heartlands.</p>
                   </div>
                 </div>
-              </CardContent>
-           </Card>
+                <Button 
+                  onClick={() => onNavigate('projects')} 
+                  className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl hover:bg-primary transition-all overflow-hidden relative group/btn"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    Deep Dive Data <ArrowRight size={18} />
+                  </span>
+                  <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform origin-left" />
+                </Button>
+             </motion.div>
+          </div>
         </div>
-        <div className="lg:col-span-4 flex flex-col gap-6">
-           <Card className="border border-border/50 shadow-xl bg-card rounded-[2.5rem] flex-1 flex flex-col justify-center p-10 space-y-6">
-              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
-                <Users size={32} />
-              </div>
-              <div className="space-y-2">
-                <h4 className="text-2xl font-black tracking-tight text-foreground uppercase">Beneficiary Engagement</h4>
-                <p className="text-sm text-muted-foreground font-medium italic">Mapping socio-economic progress across hundreds of villages with precision.</p>
-              </div>
-              <Button onClick={() => onNavigate('projects')} className="w-full h-14 rounded-2xl bg-slate-900 font-bold uppercase text-xs tracking-widest">
-                Explore All Projects <ArrowRight className="ml-2" size={16} />
-              </Button>
-           </Card>
-        </div>
-      </div>
+      </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatCard title={t.activeProjects} value={stats.activeProjects.toString()} icon={Briefcase} trend={12} />
