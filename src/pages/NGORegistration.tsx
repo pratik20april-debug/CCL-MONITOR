@@ -10,25 +10,60 @@ import { db, auth } from '@/src/firebase';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
 
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { cn } from '@/src/lib/utils';
+
 export default function NGORegistration() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = React.useState(1);
   const [invitationCode, setInvitationCode] = React.useState('');
   const [ngoName, setNgoName] = React.useState('');
   const [mobile, setMobile] = React.useState('');
-  const [otp, setOtp] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [uniqueLoginCode, setUniqueLoginCode] = React.useState('');
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [invitationData, setInvitationData] = React.useState<any>(null);
-  const [otpSent, setOtpSent] = React.useState(false);
-  const [mockOtp, setMockOtp] = React.useState('');
+  const [isActivated, setIsActivated] = React.useState(false);
 
-  // Check URL for code on mount
+  // Check URL for code on mount - Robust Extraction
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (code) setInvitationCode(code);
-  }, []);
+    // Check both searchParams and raw hash/search as fallback
+    const codeFromParams = searchParams.get('code');
+    const codeFromURL = new URLSearchParams(window.location.search).get('code') || 
+                        new URLSearchParams(window.location.hash.split('?')[1]).get('code');
+    
+    const code = codeFromParams || codeFromURL;
+    
+    if (code) {
+      setInvitationCode(code);
+      const verifyAuto = async () => {
+        setIsVerifying(true);
+        try {
+          const q = query(collection(db, 'invitations'), where('code', '==', code.trim()), where('status', '==', 'PENDING'));
+          const snapshot = await getDocs(q);
+
+          if (snapshot.empty) {
+            toast.error('Invalid or expired invitation code.');
+            return;
+          }
+
+          const data = { id: snapshot.docs[0].id, ...(snapshot.docs[0].data() as any) };
+          setInvitationData(data);
+          setNgoName(data.targetNGO || '');
+          setStep(2);
+          toast.success('Invitation link detected and verified.');
+        } catch (error) {
+          console.error("Auto-verify error:", error);
+          toast.error('Verification failed. Please enter code manually.');
+        } finally {
+          setIsVerifying(false);
+        }
+      };
+      verifyAuto();
+    }
+  }, [searchParams]);
 
   const verifyInvitation = async () => {
     if (!invitationCode.trim()) {
@@ -58,24 +93,22 @@ export default function NGORegistration() {
     }
   };
 
-  const sendOtp = () => {
+  const generateUniqueId = () => {
     if (mobile.length !== 10) {
       toast.error('Please enter a valid 10-digit mobile number.');
       return;
     }
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setMockOtp(generatedOtp);
-    setOtpSent(true);
-    toast.success(`Verification code sent to ${mobile}. (Demo OTP: ${generatedOtp})`);
-  };
-
-  const verifyOtp = () => {
-    if (otp === mockOtp) {
-      setStep(3);
-      toast.success('Mobile number verified.');
-    } else {
-      toast.error('Invalid OTP. Please try again.');
-    }
+    
+    setIsVerifying(true);
+    // Generate unique login ID for NGO associated with mobile
+    const suffix = mobile.slice(-4);
+    const rand = Math.floor(100 + Math.random() * 900);
+    const uniqueId = `NGO-${suffix}-${rand}`;
+    setUniqueLoginCode(uniqueId);
+    
+    setStep(3);
+    setIsVerifying(false);
+    toast.success('Unique ID generated successfully! Please set your password.');
   };
 
   const handleRegister = async () => {
@@ -83,15 +116,27 @@ export default function NGORegistration() {
       toast.error('Passwords do not match.');
       return;
     }
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters.');
+    if (password.length !== 6) {
+      toast.error('Password must be exactly 6 digits.');
+      return;
+    }
+
+    // Verify NGO name matches invitation (matchable ignore lower or upper case)
+    if (!invitationData || !invitationData.targetNGO) {
+      toast.error('Session expired. Please re-verify your invitation code.');
+      setStep(1);
+      return;
+    }
+
+    if (ngoName.trim().toLowerCase() !== invitationData.targetNGO.trim().toLowerCase()) {
+      toast.error(`NGO Name must match the invitation name: ${invitationData.targetNGO}`);
       return;
     }
 
     setIsVerifying(true);
     try {
       // Create auth user (using a dummy email format for NGO login logic)
-      const dummyEmail = `ngo_${mobile}@ccl.csr`;
+      const dummyEmail = `ngo_${uniqueLoginCode.toLowerCase()}@ccl.csr`;
       const userCredential = await createUserWithEmailAndPassword(auth, dummyEmail, password);
       
       // Update Auth Profile
@@ -103,6 +148,7 @@ export default function NGORegistration() {
         email: dummyEmail,
         name: ngoName,
         mobile: mobile,
+        uniqueId: uniqueLoginCode,
         role: 'NGO',
         createdAt: Date.now()
       });
@@ -110,9 +156,10 @@ export default function NGORegistration() {
       // Create NGO specific record
       const ngoRef = await addDoc(collection(db, 'ngos'), {
         name: ngoName,
+        uniqueId: uniqueLoginCode,
         mobile: mobile,
         status: 'ACTIVE',
-        approvalStatus: 'PENDING', // Still needs admin approval for full access
+        approvalStatus: 'PENDING',
         createdAt: Date.now(),
         invitationId: invitationData.id,
         invitationCode: invitationCode
@@ -121,11 +168,12 @@ export default function NGORegistration() {
       // Mark invitation as USED
       await updateDoc(doc(db, 'invitations', invitationData.id), {
         status: 'USED',
-        usedBy: ngoRef.id
+        usedBy: ngoRef.id,
+        usedAt: Date.now()
       });
 
-      toast.success('Registration complete! Welcome to the CCL CSR Portal.');
-      window.location.href = '/'; // Go home/login
+      setIsActivated(true);
+      toast.success(`Account Activated! Your official Unique Code is: ${uniqueLoginCode}`);
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || 'Registration failed.');
@@ -168,7 +216,34 @@ export default function NGORegistration() {
           </CardHeader>
           <CardContent className="pt-4">
             <AnimatePresence mode="wait">
-              {step === 1 && (
+              {isActivated ? (
+                <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-6 py-8">
+                  <div className="w-24 h-24 bg-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-xl shadow-emerald-200">
+                    <ShieldCheck size={48} className="text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-black text-slate-800 tracking-tight">ACCOUNT ACTIVATED</h2>
+                    <p className="text-slate-500 font-medium italic">Welcome to the CCL CSR Ecosystem</p>
+                  </div>
+                  
+                  <div className="p-6 rounded-[2rem] bg-primary/5 border-2 border-dashed border-primary/20 space-y-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Your Secure Unique Code</p>
+                    <div className="text-4xl font-black font-mono tracking-tighter text-primary">
+                      {uniqueLoginCode}
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed px-4">
+                      KINDLY SAVE THIS CODE. YOU WILL NEED IT ALONG WITH YOUR MOBILE NO. AND PASSWORD TO ACCESS YOUR DASHBOARD.
+                    </p>
+                  </div>
+
+                  <Button 
+                    onClick={() => navigate('/login')} 
+                    className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-[0.2em] text-xs shadow-2xl hover:scale-[1.02] transition-transform"
+                  >
+                    Enter Login Panel
+                  </Button>
+                </motion.div>
+              ) : step === 1 ? (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Invitation Code</Label>
@@ -182,14 +257,16 @@ export default function NGORegistration() {
                       <LinkIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                     </div>
                   </div>
-                  <Button onClick={verifyInvitation} disabled={isVerifying} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]">
+                  <Button 
+                    onClick={verifyInvitation} 
+                    disabled={isVerifying} 
+                    className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]"
+                  >
                     Verify Invitation {isVerifying && "..."}
                   </Button>
                 </motion.div>
-              )}
-
-              {step === 2 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+              ) : step === 2 ? (
+                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">NGO Official Name</Label>
                     <div className="relative">
@@ -204,52 +281,36 @@ export default function NGORegistration() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mobile Number</Label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input 
-                          value={mobile}
-                          onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                          className="h-12 pl-12 rounded-xl border-slate-200"
-                          placeholder="Registered Mobile No."
-                        />
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                      </div>
-                      <Button variant="outline" onClick={sendOtp} disabled={otpSent} className="h-12 rounded-xl px-6 font-bold text-xs uppercase">
-                        {otpSent ? "Resend" : "Send OTP"}
-                      </Button>
+                    <div className="relative">
+                      <Input 
+                        value={mobile}
+                        onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="h-12 pl-12 rounded-xl border-slate-200"
+                        placeholder="Registered Mobile No."
+                      />
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                     </div>
                   </div>
-                  {otpSent && (
-                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enter OTP</Label>
-                      <div className="relative">
-                        <Input 
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="h-12 pl-12 rounded-xl border-slate-200 tracking-[0.8em] font-black text-center"
-                          placeholder="000000"
-                        />
-                        <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                      </div>
-                      <Button onClick={verifyOtp} className="w-full h-12 rounded-xl bg-slate-900 text-white font-black uppercase tracking-widest text-xs mt-2">
-                        Verify Number
-                      </Button>
-                    </motion.div>
-                  )}
+                  <Button 
+                    onClick={generateUniqueId} 
+                    disabled={mobile.length !== 10 || isVerifying}
+                    className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-sm shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]"
+                  >
+                    Generate Unique ID & Continue {isVerifying && "..."}
+                  </Button>
                 </motion.div>
-              )}
-
-              {step === 3 && (
-                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+              ) : (
+                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Create Password</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Create Password (6 Digits)</Label>
                     <div className="relative">
                       <Input 
                         type="password"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="h-12 pl-12 rounded-xl border-slate-200"
-                        placeholder="••••••••"
+                        placeholder="••••••"
+                        maxLength={6}
                       />
                       <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                     </div>
@@ -260,9 +321,10 @@ export default function NGORegistration() {
                       <Input 
                         type="password"
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, '').slice(0, 6))}
                         className="h-12 pl-12 rounded-xl border-slate-200"
-                        placeholder="••••••••"
+                        placeholder="••••••"
+                        maxLength={6}
                       />
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
                     </div>
@@ -282,11 +344,21 @@ export default function NGORegistration() {
             </div>
           </CardFooter>
         </Card>
+        
+        <div className="mt-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <Button 
+            variant="ghost" 
+            className="text-slate-400 font-bold hover:text-primary transition-colors gap-2"
+            onClick={() => navigate('/login')}
+          >
+            Already have an account? Return to Login
+          </Button>
+        </div>
       </div>
     </div>
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ');
+function App() {
+  return null; // This file is a page, this might be a mistake in the template if it existed
 }

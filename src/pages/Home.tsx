@@ -11,9 +11,12 @@ import {
   Users,
   Activity,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Play,
+  Video,
+  X as CloseIcon
 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, 
   Bar, 
@@ -30,6 +33,7 @@ import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, onSnapshot, collectionGroup, query, orderBy, limit, where } from 'firebase/firestore';
 import { AppContext } from '../App';
 import { Languages, Globe } from 'lucide-react';
+import PresentationGuide from '../components/PresentationGuide';
 
 const translations = {
   en: {
@@ -54,7 +58,11 @@ const translations = {
     helpDesc: "Need assistance? Explore our guides or contact support.",
     guide: "User Guide",
     faq: "FAQs",
-    contact: "Contact Support"
+    contact: "Contact Support",
+    videoGuide: "How to use this app",
+    watchVideo: "Watch small video",
+    voiceGuidance: "App voice guidance",
+    close: "Close"
   },
   hi: {
     welcome: "सेंट्रल कोलफील्ड्स लिमिटेड",
@@ -78,7 +86,11 @@ const translations = {
     helpDesc: "सहायता चाहिए? हमारे गाइड देखें या समर्थन से संपर्क करें।",
     guide: "उपयोगकर्ता गाइड",
     faq: "सामान्य प्रश्न",
-    contact: "सहायता से संपर्क करें"
+    contact: "सहायता से संपर्क करें",
+    videoGuide: "सिस्टम ओवरव्यू गाइड",
+    watchVideo: "एप्लिकेशन वॉकथ्रू देखें",
+    voiceGuidance: "महिला आवाज सहायक मार्गदर्शन",
+    close: "प्लेयर बंद करें"
   }
 };
 
@@ -97,11 +109,11 @@ const StatCard = ({ title, value, icon: Icon, trend }: any) => (
     <CardContent className="p-8">
       <div className="flex items-center justify-between">
         <div className="space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/70">{title}</p>
+          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">{title}</p>
           <h3 className="text-4xl font-black tracking-tighter text-foreground group-hover:text-primary transition-colors duration-500">{value}</h3>
           {trend !== undefined && (
             <div className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider",
+              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black tracking-wider",
               trend > 0 ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
             )}>
               <TrendingUp size={12} className={cn(trend < 0 && "rotate-180")} />
@@ -129,6 +141,7 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
   });
   const [ongoingProjects, setOngoingProjects] = React.useState<any[]>([]);
   const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
+  const [showVideo, setShowVideo] = React.useState(false);
 
   React.useEffect(() => {
     if (!auth.currentUser) return;
@@ -215,9 +228,72 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
   }, []);
 
   return (
-    <div className="space-y-10 pb-20 neo-blur">
-      {/* Top Bar: Language */}
-      <div className="flex justify-end">
+    <div className="space-y-12 pb-20 neo-blur">
+      {/* App Tour Video at Top */}
+      <section className="relative pt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 bg-transparent border-none rounded-[3.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.05)]">
+          <div className="lg:col-span-12 relative h-[80vh] min-h-[600px] group cursor-pointer overflow-hidden rounded-[3.5rem]" onClick={() => setShowVideo(true)}>
+             <img 
+                src="https://picsum.photos/seed/ccl-mining-ranchi/1920/1080" 
+                alt="System Preview" 
+                className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent flex items-center p-12 lg:p-24">
+                <div className="max-w-2xl space-y-8">
+                  <div className="inline-flex items-center gap-3 px-5 py-2 bg-primary/20 backdrop-blur-xl rounded-full border border-white/20">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-ping" />
+                    <span className="text-xs font-black uppercase tracking-[0.35em] text-white">Easy Guide</span>
+                  </div>
+                  
+                  <h1 className="text-6xl lg:text-8xl font-black tracking-tighter leading-[0.95] text-white uppercase drop-shadow-2xl">
+                    See how it <br />
+                    <span className="text-primary italic">works</span>
+                  </h1>
+                  
+                  <p className="text-xl text-white/80 font-medium leading-relaxed italic max-w-lg">
+                    "Watch a short video to learn how to use this app with simple voice guidance."
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-6 pt-4">
+                    <Button 
+                      onClick={(e) => { e.stopPropagation(); setShowVideo(true); }}
+                      className="h-20 px-12 rounded-[2rem] bg-white text-black font-black text-sm uppercase tracking-[0.25em] shadow-[0_20px_50px_rgba(255,255,255,0.2)] hover:bg-primary hover:text-white transition-all transform hover:scale-105 group/btn overflow-hidden"
+                    >
+                      <div className="absolute inset-x-0 bottom-0 h-1 bg-primary/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform origin-left" />
+                      <Play className="mr-4 fill-current group-hover/btn:animate-pulse" size={24} />
+                      Watch Video
+                    </Button>
+                    <div className="flex items-center gap-6 text-white/60 bg-white/5 backdrop-blur-md px-6 py-3 rounded-2xl border border-white/10 group/vo">
+                       <div className="relative">
+                         <div className="absolute inset-0 bg-primary rounded-full blur-md opacity-20 animate-pulse" />
+                         <Users className="text-primary group-hover/vo:scale-110 transition-transform" size={20} />
+                       </div>
+                       <div className="flex flex-col">
+                         <span className="text-xs font-black uppercase tracking-[0.3em] text-white">App Assistant</span>
+                         <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Voice Guided Tour</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+
+        {/* App Tour Video Overlay */}
+        <PresentationGuide 
+          isOpen={showVideo} 
+          onClose={() => setShowVideo(false)} 
+        />
+      </section>
+
+      {/* Top Bar: Language & Branding */}
+      <div className="flex justify-between items-center px-4">
+        <div className="flex items-center gap-4">
+          <div className="text-primary font-black text-3xl tracking-tighter uppercase whitespace-nowrap">CCL CSR</div>
+          <div className="h-10 w-px bg-border/50 hidden md:block" />
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest hidden md:block">Sustainable Development & Excellence</p>
+        </div>
         <div className="flex bg-card/50 backdrop-blur-xl p-1.5 rounded-2xl border border-border/50 shadow-lg">
           <button 
             onClick={() => setLanguage('en')}
@@ -240,52 +316,49 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
         </div>
       </div>
 
-      {/* Hero Section: Vision, Mission & CSR */}
-      <Card className="border border-border/50 shadow-2xl bg-primary text-primary-foreground overflow-hidden relative min-h-[500px] flex items-center">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-white/10 rounded-full -mr-64 -mt-64 blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-black/20 rounded-full -ml-64 -mb-64 blur-[120px]" />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10 pointer-events-none" />
-        
-        <CardContent className="p-10 lg:p-20 relative w-full">
-          <div className="max-w-4xl mx-auto text-center space-y-12">
-            <div className="space-y-6">
-              <Badge className="bg-white/20 text-white border-none px-4 py-1.5 text-[12px] font-black tracking-[0.3em] uppercase mb-4">Miniratna Category-I Company</Badge>
-              <h1 className="text-5xl lg:text-8xl font-black tracking-tighter leading-[0.9] text-white">
-                {t.welcome}
-              </h1>
-              <p className="text-xl lg:text-2xl font-medium text-white/80 max-w-2xl mx-auto leading-relaxed">
-                {t.philosophyText}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8">
-              <div className="space-y-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 text-left group">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:bg-white group-hover:text-primary transition-colors">
-                  <Activity size={20} />
+      {/* Hero Section: Vision, Mission (Condensed for beauty) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 px-4">
+        <div className="lg:col-span-8">
+           <Card className="border-none shadow-2xl bg-primary text-primary-foreground overflow-hidden h-full rounded-[3rem] relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent" />
+              <CardContent className="p-16 relative space-y-12">
+                <div className="space-y-6">
+                  <Badge className="bg-white/20 text-white border-none px-4 py-1.5 text-xs font-black tracking-[0.25em] uppercase mb-4">Miniratna Category-I Company</Badge>
+                  <h2 className="text-5xl font-black tracking-tighter leading-none text-white uppercase italic">
+                    {t.welcome}
+                  </h2>
+                  <p className="text-xl font-medium text-white/80 max-w-xl leading-relaxed">
+                    {t.philosophyText}
+                  </p>
                 </div>
-                <h4 className="text-sm font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
-                  {t.vision}
-                </h4>
-                <p className="text-lg font-bold leading-tight italic text-white/90">
-                  "{t.visionText}"
-                </p>
-              </div>
-              <div className="space-y-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-500 text-left group">
-                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white mb-4 group-hover:bg-white group-hover:text-primary transition-colors">
-                  <TrendingUp size={20} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-white/60">{t.vision}</h3>
+                    <p className="text-sm font-bold leading-relaxed italic text-white/90">"{t.visionText}"</p>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-white/60">{t.mission}</h3>
+                    <p className="text-sm font-medium leading-relaxed text-white/80">{t.missionText}</p>
+                  </div>
                 </div>
-                <h4 className="text-sm font-black uppercase tracking-[0.2em] text-white/60 flex items-center gap-2">
-                  {t.mission}
-                </h4>
-                <p className="text-base font-medium leading-relaxed text-white/80">
-                  {t.missionText}
-                </p>
+              </CardContent>
+           </Card>
+        </div>
+        <div className="lg:col-span-4 flex flex-col gap-6">
+           <Card className="border border-border/50 shadow-xl bg-card rounded-[2.5rem] flex-1 flex flex-col justify-center p-10 space-y-6">
+              <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary">
+                <Users size={32} />
               </div>
-            </div>
-
-          </div>
-        </CardContent>
-      </Card>
+              <div className="space-y-2">
+                <h4 className="text-2xl font-black tracking-tight text-foreground uppercase">Beneficiary Engagement</h4>
+                <p className="text-sm text-muted-foreground font-medium italic">Mapping socio-economic progress across hundreds of villages with precision.</p>
+              </div>
+              <Button onClick={() => onNavigate('projects')} className="w-full h-14 rounded-2xl bg-slate-900 font-bold uppercase text-xs tracking-widest">
+                Explore All Projects <ArrowRight className="ml-2" size={16} />
+              </Button>
+           </Card>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <StatCard title={t.activeProjects} value={stats.activeProjects.toString()} icon={Briefcase} trend={12} />
@@ -298,16 +371,26 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
         <Card className="shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full" />
                 {t.ongoingCompletion}
               </CardTitle>
-              <Badge variant="outline" className="font-mono text-[10px]">LIVE PROGRESS</Badge>
+              <div className="flex gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs font-black tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
+                  onClick={() => onNavigate('projects')}
+                >
+                  See More <ArrowRight className="ml-1" size={12} />
+                </Button>
+                <Badge variant="outline" className="font-mono text-xs">LIVE PROGRESS</Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {ongoingProjects.length > 0 ? ongoingProjects.map((project) => (
+              {ongoingProjects.length > 0 ? ongoingProjects.slice(0, 6).map((project) => (
                 <div key={project.id} className="space-y-3 p-4 rounded-2xl bg-muted/30 border border-border/50 hover:border-primary/30 transition-all group">
                   <div className="flex justify-between items-center">
                     <p className="font-bold text-sm truncate max-w-[200px] group-hover:text-primary transition-colors">{project.name}</p>
@@ -335,14 +418,24 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
       <div className="grid grid-cols-1 gap-10">
         <Card className="border border-border/50 shadow-xl bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
-            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
-              <div className="w-2 h-2 bg-primary rounded-full" />
-              {t.operations}
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-black uppercase tracking-widest flex items-center gap-3">
+                <div className="w-2 h-2 bg-primary rounded-full" />
+                {t.operations}
+              </CardTitle>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-xs font-black tracking-widest uppercase text-muted-foreground hover:text-primary transition-colors"
+                onClick={() => onNavigate('reports')}
+              >
+                Full History <ArrowRight className="ml-1" size={12} />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-border/50">
-              {recentActivities.length > 0 ? recentActivities.map((activity) => (
+              {recentActivities.length > 0 ? recentActivities.slice(0, 6).map((activity) => (
                 <div key={activity.id} className="flex items-center gap-6 p-8 hover:bg-primary/[0.02] transition-all duration-500 group relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary scale-y-0 group-hover:scale-y-100 transition-transform duration-500" />
                   <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-700 shadow-inner">
@@ -355,22 +448,22 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
                           ? `Progress update for ${activity.projectName || activity.area}` 
                           : `Status change for ${activity.name || activity.sections?.projectName || 'Project'}`}
                       </p>
-                      <Badge variant="secondary" className="font-mono text-[10px] uppercase tracking-widest px-3 py-1 rounded-full bg-muted/50">
+                      <Badge variant="secondary" className="font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-muted/50">
                         {new Date(activity.timestamp).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="text-sm text-muted-foreground line-clamp-1 font-medium leading-relaxed max-w-3xl">
+                      <p className="text-sm text-muted-foreground line-clamp-1 font-medium leading-relaxed max-w-3xl text-slate-500">
                         {activity.type === 'REPORT' 
                           ? activity.progressText 
                           : `Current Status: ${activity.status}`}
                       </p>
                       {activity.type === 'REPORT' && (
                         <div className="flex gap-2">
-                          <Badge variant="outline" className="text-[9px] font-bold text-primary border-primary/20">
+                          <Badge variant="outline" className="text-[11px] font-bold text-primary border-primary/20">
                             PHYSICAL: {activity.physicalProgress || 0}%
                           </Badge>
-                          <Badge variant="outline" className="text-[9px] font-bold text-blue-600 border-blue-200">
+                          <Badge variant="outline" className="text-[11px] font-bold text-blue-600 border-blue-200">
                             FINANCIAL: {activity.financialProgress || 0}%
                           </Badge>
                         </div>
@@ -379,14 +472,14 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
                     <Badge className={cn(
-                      "font-black text-[10px] px-4 py-1.5 rounded-full border-none shadow-sm",
+                      "font-black text-xs px-4 py-1.5 rounded-full border-none shadow-sm",
                       activity.status === 'VERIFIED' || activity.status === 'ONGOING' || activity.status === 'COMPLETED' 
                         ? "bg-green-500 text-white" 
                         : "bg-yellow-500 text-white"
                     )}>
                       {activity.status}
                     </Badge>
-                    <span className="text-[10px] font-mono text-muted-foreground/50 uppercase tracking-tighter">Ref: {activity.id.slice(0, 8)}</span>
+                    <span className="text-xs font-mono text-slate-300 uppercase tracking-tighter">Ref: {activity.id.slice(0, 8)}</span>
                   </div>
                 </div>
               )) : (

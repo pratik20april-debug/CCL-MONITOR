@@ -6,27 +6,47 @@ import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { toast } from 'sonner';
-import { auth } from '@/src/firebase';
+import { auth, db } from '@/src/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
-const schema = z.object({
-  email: z.string().min(3, "Required"),
+const employeeSchema = z.object({
+  email: z.string().email("Invalid email").min(3, "Required"),
   password: z.string().min(6, "Password must be at least 6 characters")
 });
 
-export default function LoginForm({ isNGO = false }: { isNGO?: boolean }) {
+const ngoSchema = z.object({
+  mobile: z.string().length(10, "10-digit mobile required"),
+  uniqueId: z.string().min(5, "Unique ID is required"),
+  password: z.string().min(6, "Password must be at least 6 characters")
+});
+
+function NGOLoginForm() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
-    resolver: zodResolver(schema)
+    resolver: zodResolver(ngoSchema)
   });
 
   const onSubmit = async (data: any) => {
     try {
-      let email = data.email;
-      // If it looks like a mobile number and it's NGO login, convert to pseudo-email
-      if (isNGO && /^\d{10}$/.test(email)) {
-        email = `ngo_${email}@ccl.csr`;
+      // Search for user by Mobile and Unique ID
+      const usersRef = collection(db, 'users');
+      const q = query(
+        usersRef, 
+        where('role', '==', 'NGO'),
+        where('mobile', '==', data.mobile.trim()),
+        where('uniqueId', '==', data.uniqueId.trim())
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        toast.error("Invalid Mobile No. or Unique ID association.");
+        return;
       }
-      await signInWithEmailAndPassword(auth, email, data.password);
+
+      const userData = snapshot.docs[0].data();
+      
+      await signInWithEmailAndPassword(auth, userData.email, data.password);
       toast.success("Login successful!");
     } catch (error: any) {
       console.error("Login error:", error);
@@ -37,12 +57,65 @@ export default function LoginForm({ isNGO = false }: { isNGO?: boolean }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="login-email">{isNGO ? "Registered Mobile or Email" : "Email ID"}</Label>
+        <Label htmlFor="mobile">Mobile Number</Label>
+        <Input 
+          id="mobile" 
+          type="text" 
+          {...register('mobile')} 
+          placeholder="Registered Mobile Number" 
+        />
+        {errors.mobile && <p className="text-xs text-destructive">{errors.mobile.message as string}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="unique-id">Unique Login Code</Label>
+        <Input 
+          id="unique-id" 
+          type="text" 
+          {...register('uniqueId')} 
+          placeholder="NGO-XXXX-XXX" 
+          className="font-mono uppercase"
+        />
+        {errors.uniqueId && <p className="text-xs text-destructive">{errors.uniqueId.message as string}</p>}
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="login-password">Password</Label>
+        <Input id="login-password" type="password" {...register('password')} placeholder="••••••••" />
+        {errors.password && <p className="text-xs text-destructive">{errors.password.message as string}</p>}
+      </div>
+      
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
+        {isSubmitting ? "Authenticating..." : "NGO Login"}
+      </Button>
+    </form>
+  );
+}
+
+function EmployeeLoginForm() {
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+    resolver: zodResolver(employeeSchema)
+  });
+
+  const onSubmit = async (data: any) => {
+    try {
+      await signInWithEmailAndPassword(auth, data.email, data.password);
+      toast.success("Login successful!");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error(error.message || "Invalid credentials");
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="login-email">Employee Email ID</Label>
         <Input 
           id="login-email" 
-          type={isNGO ? "text" : "email"} 
+          type="email" 
           {...register('email')} 
-          placeholder={isNGO ? "9988776655" : "john@example.com"} 
+          placeholder="employee@ccl.gov.in" 
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message as string}</p>}
       </div>
@@ -54,12 +127,22 @@ export default function LoginForm({ isNGO = false }: { isNGO?: boolean }) {
       </div>
       
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Logging in..." : "Login"}
+        {isSubmitting ? "Logging in..." : "Employee Login"}
       </Button>
+    </form>
+  );
+}
+
+export default function LoginForm({ isNGO = false }: { isNGO?: boolean }) {
+  return (
+    <div className="space-y-4">
+      {isNGO ? <NGOLoginForm /> : <EmployeeLoginForm />}
       
       <div className="text-center">
-        <Button variant="link" size="sm" type="button">Forgot password?</Button>
+        <Button variant="link" size="sm" type="button">
+          {isNGO ? "Trouble logging in?" : "Forgot password?"}
+        </Button>
       </div>
-    </form>
+    </div>
   );
 }

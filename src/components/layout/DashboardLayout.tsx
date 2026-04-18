@@ -21,7 +21,8 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronRight,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Globe
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { cn } from '@/src/lib/utils';
@@ -38,14 +39,25 @@ const NavItem = ({ icon: Icon, label, active, onClick }: NavItemProps) => (
   <button
     onClick={onClick}
     className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 w-full text-left",
+      "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 w-full text-left group relative overflow-hidden",
       active 
-        ? "bg-primary text-primary-foreground shadow-md" 
-        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-[1.02]" 
+        : "text-muted-foreground hover:bg-muted/80 hover:scale-[1.01]"
     )}
   >
-    <Icon size={20} />
-    <span className="font-medium">{label}</span>
+    <div className={cn(
+      "w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300",
+      active ? "bg-white/20" : "bg-muted group-hover:bg-primary/10 group-hover:text-primary"
+    )}>
+      <Icon size={18} />
+    </div>
+    <span className={cn("font-bold text-xs uppercase tracking-widest transition-colors", active ? "text-white" : "group-hover:text-foreground text-muted-foreground/70")}>{label}</span>
+    {active && (
+      <motion.div 
+        layoutId="nav-active-bar"
+        className="absolute left-0 top-0 w-1 h-full bg-white rounded-r-full"
+      />
+    )}
   </button>
 );
 
@@ -123,29 +135,44 @@ export default function DashboardLayout({
         animate={{ width: isSidebarOpen ? 280 : 80 }}
         className="bg-card/80 backdrop-blur-xl border-r flex flex-col z-50 relative shadow-2xl"
       >
-        <div className="p-6 flex items-center justify-between">
+        <div className="p-8 flex items-center justify-between">
           {isSidebarOpen && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
               className="flex items-center gap-3"
             >
-              <span className="font-black text-xl tracking-tighter text-foreground">CSR MONITOR</span>
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground shadow-lg shadow-primary/30">
+                <LayoutDashboard size={20} />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-black text-xl tracking-tighter text-foreground font-heading uppercase leading-none">CSR Portal</span>
+                <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground/50 uppercase whitespace-nowrap">Central Coalfields</span>
+              </div>
             </motion.div>
           )}
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="ml-auto hover:bg-primary/10 transition-colors"
+            className="w-10 h-10 rounded-xl hover:bg-primary/10 hover:text-primary transition-all ml-auto"
           >
             {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </Button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-6 mt-8 overflow-y-auto no-scrollbar pb-10">
+        <nav className="flex-1 px-4 space-y-8 mt-4 overflow-y-auto no-scrollbar pb-10">
           {navSections.map((section) => {
-            const filteredItems = section.items.filter(item => !item.adminOnly || userRole === 'ADMIN');
+            // Filter by adminOnly
+            let filteredItems = section.items.filter(item => !item.adminOnly || userRole === 'ADMIN');
+            
+            // Further filter for NGO role: Only show NGO category
+            if (userRole === 'NGO') {
+              if (section.title !== 'NGO') {
+                return null;
+              }
+            }
+
             if (filteredItems.length === 0) return null;
             
             const isExpanded = expandedSections.includes(section.title);
@@ -217,24 +244,34 @@ export default function DashboardLayout({
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto relative flex flex-col">
-        <header className="h-20 border-b border-border/50 bg-background/40 backdrop-blur-xl sticky top-0 z-40 flex items-center px-10 justify-between">
+      <main className="flex-1 overflow-auto relative flex flex-col bg-slate-50/50">
+        <header className="h-24 border-b border-border/50 bg-white/60 backdrop-blur-3xl sticky top-0 z-40 flex items-center px-12 justify-between">
           <div className="flex flex-col">
-            <h1 className="text-2xl font-black capitalize tracking-tight text-foreground">{activeTab.replace('-', ' ')}</h1>
-            <p className="text-xs text-muted-foreground font-medium">Central Coalfields CSR Management Portal</p>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Live System</span>
+            <h1 className="text-3xl font-black capitalize tracking-tighter text-foreground font-heading">{activeTab.replace('-', ' ')}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">CCL CSR Ecosystem</span>
+              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
+              <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{userRole} PANEL</span>
             </div>
-            <div className="text-right hidden sm:block">
-              <p className="text-sm font-bold text-foreground">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-tighter">System Status: Optimal</p>
+          </div>
+          <div className="flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">System Status</span>
+                <span className="text-[10px] font-bold text-emerald-800/60 uppercase tracking-tighter">Verified & Optimal</span>
+              </div>
+            </div>
+            <div className="text-right hidden sm:block border-l border-border/50 pl-8">
+              <p className="text-sm font-black text-foreground font-heading tracking-tight">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <div className="flex items-center justify-end gap-2 mt-0.5">
+                <Globe size={10} className="text-muted-foreground" />
+                <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.1em]">Ranchi, JH, India</p>
+              </div>
             </div>
           </div>
         </header>
-        <div className="p-10 max-w-7xl mx-auto w-full flex-1">
+        <div className="p-12 max-w-7xl mx-auto w-full flex-1">
           {children}
         </div>
       </main>

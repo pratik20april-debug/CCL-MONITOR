@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src
 import { Button } from '@/src/components/ui/button';
 import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
-import { Mail, Copy, Link as LinkIcon, Trash2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
-import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { Mail, Copy, Link as LinkIcon, Trash2, CheckCircle2, AlertCircle, Sparkles, Share2, Send } from 'lucide-react';
+import { collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '@/src/firebase';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
@@ -47,10 +47,54 @@ export default function CSRInvitations() {
     }
   };
 
+  const getFullLink = (code: string) => {
+    // Priority 1: Environment variable if explicitly set to a production domain
+    // Priority 2: Current window location to ensure it works in the current environment (dev/preview/prod)
+    const baseUrl = (process.env.APP_URL && !process.env.APP_URL.includes('localhost')) 
+      ? process.env.APP_URL 
+      : window.location.origin + window.location.pathname;
+    
+    // Ensure no trailing slash or duplicate parts
+    let base = baseUrl.split('#')[0];
+    if (base.endsWith('/')) base = base.slice(0, -1);
+    
+    // Use HashRouter format for better reliability in constrained environments
+    return `${base}/#/register-ngo?code=${code}`;
+  };
+
   const copyLink = (code: string) => {
-    const link = `${window.location.origin}/register-ngo?code=${code}`;
-    navigator.clipboard.writeText(link);
+    navigator.clipboard.writeText(getFullLink(code));
     toast.success('Invitation link copied to clipboard.');
+  };
+
+  const shareViaWhatsApp = (inv: any) => {
+    const link = getFullLink(inv.code);
+    const text = `Namaste ${inv.targetNGO}! You are invited to register on the CCL CSR Portal. Use this link: ${link}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  const shareViaEmail = (inv: any) => {
+    const link = getFullLink(inv.code);
+    const subject = `Invitation: CCL CSR Portal Registration for ${inv.targetNGO}`;
+    const body = `Dear Team ${inv.targetNGO},\n\nYou have been invited to register your organization on the Central Coalfields Limited (CCL) CSR Portal.\n\nPlease use the following invitation link to complete your registration:\n${link}\n\nNote: This link is valid for 7 days and can be used only once.\n\nRegards,\nCCL CSR Team`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const shareLink = async (inv: any) => {
+    const link = getFullLink(inv.code);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'NGO Registration Link',
+          text: `Invitation for ${inv.targetNGO} to register on CCL CSR Portal.`,
+          url: link
+        });
+      } catch (err) {
+        copyLink(inv.code);
+      }
+    } else {
+      copyLink(inv.code);
+    }
   };
 
   const deleteInvitation = async (id: string) => {
@@ -131,11 +175,22 @@ export default function CSRInvitations() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between group-hover:bg-slate-100 transition-colors">
-                    <code className="text-xs font-mono font-bold text-slate-600">{inv.code}</code>
-                    <div className="flex gap-1">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex flex-col gap-3 group-hover:bg-slate-100 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <code className="text-xs font-mono font-bold text-slate-600">{inv.code}</code>
                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={() => copyLink(inv.code)}>
                         <Copy size={14} />
+                      </Button>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase rounded-lg bg-green-50 text-green-700 border-green-100 hover:bg-green-100" onClick={() => shareViaWhatsApp(inv)}>
+                        <Send size={12} className="mr-1" /> WhatsApp
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase rounded-lg bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100" onClick={() => shareViaEmail(inv)}>
+                        <Mail size={12} className="mr-1" /> Email
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1 h-8 text-[10px] font-black uppercase rounded-lg bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100" onClick={() => shareLink(inv)}>
+                        <Share2 size={12} className="mr-1" /> Share
                       </Button>
                     </div>
                   </div>

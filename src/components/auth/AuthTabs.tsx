@@ -6,10 +6,12 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { ShieldCheck, User, KeyRound, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import CCLRegistrationForm from './CCLRegistrationForm';
 import LoginForm from './LoginForm';
 
 export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (code: string) => void }) {
+  const navigate = useNavigate();
   const [adminCode, setAdminCode] = React.useState('');
   const SUPER_ADMIN_CODE = "G56AW0912PL";
 
@@ -97,13 +99,25 @@ export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (co
             </CardHeader>
             <CardContent>
               <LoginForm isNGO />
-              <div className="mt-6 pt-6 border-t border-border/50 text-center">
-                <p className="text-xs text-muted-foreground">
-                  NGO registration is strictly by invitation link only.
-                </p>
-                <p className="text-[10px] mt-2 font-bold uppercase text-primary/60">
-                  Contact CSR Department for access links
-                </p>
+              <div className="mt-6 pt-6 border-t border-border/50 text-center space-y-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    NGO registration is strictly by invitation link only.
+                  </p>
+                  <p className="text-[10px] mt-2 font-bold uppercase text-primary/60">
+                    Contact CSR Department for access links
+                  </p>
+                </div>
+                
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/register-ngo')} 
+                    className="text-xs font-bold uppercase tracking-widest h-10 w-full rounded-xl border-dashed border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                  >
+                    Redeem Invitation Code
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

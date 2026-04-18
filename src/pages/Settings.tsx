@@ -212,9 +212,12 @@ export default function Settings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="xs">Extra Small</SelectItem>
                       <SelectItem value="small">Small</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="medium">Standard</SelectItem>
                       <SelectItem value="large">Large</SelectItem>
+                      <SelectItem value="xl">Extra Large</SelectItem>
+                      <SelectItem value="massive">Massive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

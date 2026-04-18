@@ -36,8 +36,13 @@ export default defineConfig(({mode}) => {
         }
       })
     ],
+    build: {
+      outDir: 'dist',
+      emptyOutDir: true,
+    },
     define: {
       'process.env.APP_URL': JSON.stringify(process.env.APP_URL || ""),
+      'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || ""),
     },
     resolve: {
       alias: {
