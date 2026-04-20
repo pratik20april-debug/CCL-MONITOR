@@ -63,6 +63,7 @@ function NGOLoginForm() {
           type="text" 
           {...register('mobile')} 
           placeholder="Registered Mobile Number" 
+          className="h-12 rounded-xl"
         />
         {errors.mobile && <p className="text-xs text-destructive">{errors.mobile.message as string}</p>}
       </div>
@@ -74,19 +75,19 @@ function NGOLoginForm() {
           type="text" 
           {...register('uniqueId')} 
           placeholder="NGO-XXXX-XXX" 
-          className="font-mono uppercase"
+          className="h-12 rounded-xl font-mono uppercase"
         />
         {errors.uniqueId && <p className="text-xs text-destructive">{errors.uniqueId.message as string}</p>}
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="login-password">Password</Label>
-        <Input id="login-password" type="password" {...register('password')} placeholder="••••••••" />
+        <Input id="login-password" type="password" {...register('password')} placeholder="••••••••" className="h-12 rounded-xl" />
         {errors.password && <p className="text-xs text-destructive">{errors.password.message as string}</p>}
       </div>
       
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Authenticating..." : "NGO Login"}
+      <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest rounded-xl shadow-lg shadow-emerald-500/10" disabled={isSubmitting}>
+        {isSubmitting ? "Authenticating..." : "NGO Portal Login"}
       </Button>
     </form>
   );
@@ -116,18 +117,19 @@ function EmployeeLoginForm() {
           type="email" 
           {...register('email')} 
           placeholder="employee@ccl.gov.in" 
+          className="h-12 rounded-xl"
         />
         {errors.email && <p className="text-xs text-destructive">{errors.email.message as string}</p>}
       </div>
       
       <div className="space-y-2">
         <Label htmlFor="login-password">Password</Label>
-        <Input id="login-password" type="password" {...register('password')} placeholder="••••••••" />
+        <Input id="login-password" type="password" {...register('password')} placeholder="••••••••" className="h-12 rounded-xl" />
         {errors.password && <p className="text-xs text-destructive">{errors.password.message as string}</p>}
       </div>
       
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Logging in..." : "Employee Login"}
+      <Button type="submit" className="w-full h-12 font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/10" disabled={isSubmitting}>
+        {isSubmitting ? "Processing..." : "Authorized Login"}
       </Button>
     </form>
   );

@@ -16,6 +16,7 @@ import {
   Video,
   X as CloseIcon,
   Shield,
+  Cpu,
   Heart,
   Globe2,
   Navigation,
@@ -37,8 +38,9 @@ import { cn } from '@/src/lib/utils';
 import { db, auth, handleFirestoreError, OperationType } from '@/src/firebase';
 import { collection, onSnapshot, collectionGroup, query, orderBy, limit, where } from 'firebase/firestore';
 import { AppContext } from '../App';
-import { Languages, Globe } from 'lucide-react';
+import { Languages, Globe, Bot } from 'lucide-react';
 import PresentationGuide from '../components/PresentationGuide';
+import AIAssistant from '../components/AIAssistant';
 
 const translations = {
   en: {
@@ -205,7 +207,7 @@ const StatCard = ({ title, value, icon: Icon, trend }: any) => (
 );
 
 export default function Home({ onNavigate }: { onNavigate: (tabId: string) => void }) {
-  const { language, setLanguage } = React.useContext(AppContext);
+  const { language, setLanguage, navMode } = React.useContext(AppContext);
   const t = translations[language];
   const [stats, setStats] = React.useState({
     totalProjects: 0,
@@ -411,6 +413,45 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
          <CSRPolicySection t={t} />
       </section>
 
+      {/* Quick Navigation Shortcuts */}
+      <section className="px-4">
+         <div className="p-10 rounded-[3.5rem] bg-slate-950 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -mr-48 -mt-48" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -ml-32 -mb-32" />
+            
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-10 relative z-10">
+               <div className="space-y-4 max-w-sm">
+                  <h3 className="text-3xl font-black tracking-tighter text-white uppercase italic">Quick <br/> Navigation</h3>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-widest leading-relaxed">Direct access to mission-critical modules and analysis tools.</p>
+               </div>
+
+               <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { id: 'projects', label: 'Monitor Projects', icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+                    { id: 'gis', label: 'GIS Dashboard', icon: Globe, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+                    { id: 'budget', label: 'Fiscal Tracker', icon: TrendingUp, color: 'text-amber-400', bg: 'bg-amber-400/10' }
+                  ].map((shortcut) => (
+                    <motion.button
+                      key={shortcut.id}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => onNavigate(shortcut.id)}
+                      className="p-8 rounded-[2rem] bg-white/5 border border-white/10 flex flex-col items-center gap-6 group hover:bg-white transition-all duration-300"
+                    >
+                       <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center transition-all group-hover:bg-slate-900 group-hover:text-white", shortcut.bg, shortcut.color)}>
+                          <shortcut.icon size={32} />
+                       </div>
+                       <div className="text-center">
+                          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-400 block mb-1">Launcher</span>
+                          <span className="text-sm font-black uppercase tracking-tighter text-white group-hover:text-slate-900">{shortcut.label}</span>
+                       </div>
+                    </motion.button>
+                  ))}
+               </div>
+            </div>
+         </div>
+      </section>
+
       {/* Top Bar: Language & Branding */}
       <div className="flex justify-between items-center px-4">
         <div className="flex items-center gap-4">
@@ -539,6 +580,135 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
         <StatCard title={t.beneficiaries} value={stats.totalBeneficiaries.toLocaleString()} icon={Users} trend={24} />
       </div>
 
+      {navMode === 'advanced' && (
+        <motion.section 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="space-y-8"
+        >
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h3 className="text-3xl font-black tracking-tighter uppercase italic glitch-text">Analytical Intelligence</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/60">Advanced CSR Performance HUD</p>
+            </div>
+            <div className="flex gap-4">
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Signal Health</span>
+                  <div className="flex gap-1 mt-1">
+                     {[1, 2, 3, 4, 5].map(b => (
+                       <div key={b} className={cn("w-1 h-3 rounded-full", b <= 4 ? "bg-primary" : "bg-muted-foreground/20")} />
+                     ))}
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+             {/* Main Chart HUD */}
+             <Card className="lg:col-span-8 border-none bg-slate-900 border border-white/5 rounded-[3rem] overflow-hidden shadow-2xl relative group">
+                <div className="absolute inset-0 hud-grid opacity-10 pointer-events-none" />
+                <CardHeader className="pb-0 border-none relative z-10">
+                   <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                            <Activity size={20} />
+                         </div>
+                         <div>
+                            <CardTitle className="text-white text-base font-black uppercase tracking-widest">Growth Trajectory</CardTitle>
+                            <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest leading-none">Simulated Real-Time Impact Projection</p>
+                         </div>
+                      </div>
+                      <Badge className="bg-primary/20 text-primary border-primary/20 font-black animate-pulse">OPTIMIZED</Badge>
+                   </div>
+                </CardHeader>
+                <CardContent className="h-[400px] pt-10 relative z-10">
+                   <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={[
+                        { name: 'Q1', val: 4000 },
+                        { name: 'Q2', val: 3000 },
+                        { name: 'Q3', val: 2000 },
+                        { name: 'Q4', val: 2780 },
+                        { name: 'Q1', val: 1890 },
+                        { name: 'Q2', val: 2390 },
+                        { name: 'Q3', val: 3490 },
+                      ]}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                        <XAxis 
+                          dataKey="name" 
+                          stroke="#ffffff30" 
+                          fontSize={10} 
+                          tickLine={false} 
+                          axisLine={false}
+                          tick={{ fill: '#ffffff50', fontWeight: 'bold' }}
+                        />
+                        <YAxis hide />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '10px', color: '#fff' }}
+                          itemStyle={{ color: 'var(--primary)', fontWeight: 'bold' }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="val" 
+                          stroke="var(--primary)" 
+                          strokeWidth={4} 
+                          dot={{ r: 4, fill: 'var(--primary)', strokeWidth: 0 }}
+                          activeDot={{ r: 8, strokeWidth: 0, className: 'animate-pulse' }}
+                        />
+                      </LineChart>
+                   </ResponsiveContainer>
+                </CardContent>
+             </Card>
+
+             {/* Side Quick Stats HUD */}
+             <div className="lg:col-span-4 flex flex-col gap-6">
+                {[
+                  { label: 'Network Integrity', val: '99.9%', trend: '+0.2', icon: Shield },
+                  { label: 'Blockchain Sync', val: 'Verified', trend: 'Live', icon: Cpu },
+                  { label: 'Data Latency', val: '12ms', trend: '-2ms', icon: Clock }
+                ].map((stat, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ x: -10, scale: 1.02 }}
+                    className="p-6 rounded-3xl bg-slate-900 border border-white/5 shadow-xl flex items-center gap-6 relative overflow-hidden group"
+                  >
+                     <div className="absolute inset-0 hud-scanline opacity-5" />
+                     <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all transform group-hover:rotate-12">
+                        <stat.icon size={24} />
+                     </div>
+                     <div className="flex-1">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 block mb-1">{stat.label}</span>
+                        <div className="flex items-center justify-between">
+                           <span className="text-2xl font-black text-white tracking-tighter uppercase">{stat.val}</span>
+                           <span className={cn("text-[9px] font-black px-2 py-0.5 rounded-full", stat.trend.includes('+') ? "bg-emerald-500/10 text-emerald-400" : "bg-primary/10 text-primary")}>
+                              {stat.trend}
+                           </span>
+                        </div>
+                     </div>
+                  </motion.div>
+                ))}
+                
+                <Card className="flex-1 border-none bg-primary rounded-3xl p-8 flex flex-col justify-between shadow-2xl shadow-primary/20 group relative overflow-hidden">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl" />
+                   <div className="space-y-2 relative z-10">
+                      <h4 className="text-white font-black uppercase text-xs tracking-widest">System Optimization</h4>
+                      <p className="text-white/80 text-xs font-medium leading-tight">Advanced mode leverages AI to prioritize critical CSR alerts and field-op updates.</p>
+                   </div>
+                   <div className="space-y-4 pt-4 relative z-10">
+                      <div className="flex justify-between text-[10px] font-black text-white uppercase tracking-widest">
+                         <span>CPU Priority</span>
+                         <span>94%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                         <motion.div animate={{ width: ['20%', '94%', '88%'] }} transition={{ duration: 5, repeat: Infinity }} className="h-full bg-white shadow-[0_0_10px_white]" />
+                      </div>
+                   </div>
+                </Card>
+             </div>
+          </div>
+        </motion.section>
+      )}
+
       <div className="grid grid-cols-1 gap-10">
         <Card className="shadow-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30 pb-6">
@@ -663,6 +833,7 @@ export default function Home({ onNavigate }: { onNavigate: (tabId: string) => vo
           </CardContent>
         </Card>
       </div>
+      {navMode === 'advanced' && <AIAssistant onNavigate={onNavigate} />}
     </div>
   );
 }

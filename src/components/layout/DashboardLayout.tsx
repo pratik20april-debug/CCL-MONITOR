@@ -22,7 +22,8 @@ import {
   ChevronDown,
   ChevronRight,
   Link as LinkIcon,
-  Globe
+  Globe,
+  Grid2X2
 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { cn } from '@/src/lib/utils';
@@ -67,7 +68,9 @@ export default function DashboardLayout({
   setActiveTab,
   userName,
   userRole,
-  onLogout
+  onLogout,
+  isMobileView,
+  isAdvancedMode
 }: { 
   children: React.ReactNode;
   activeTab: string;
@@ -75,9 +78,12 @@ export default function DashboardLayout({
   userName: string;
   userRole: string;
   onLogout: () => void;
+  isMobileView?: boolean;
+  isAdvancedMode?: boolean;
 }) {
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(!isMobileView && window.innerWidth > 1024);
   const [expandedSections, setExpandedSections] = React.useState<string[]>(['CSR', 'NGO']);
+  const [isAppDrawerOpen, setIsAppDrawerOpen] = React.useState(false);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => 
@@ -132,10 +138,16 @@ export default function DashboardLayout({
       {/* Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="bg-card/80 backdrop-blur-xl border-r flex flex-col z-50 relative shadow-2xl"
+        animate={{ 
+          width: isSidebarOpen ? (isMobileView ? 240 : 280) : (isMobileView ? 0 : 80),
+          x: !isSidebarOpen && isMobileView ? -280 : 0
+        }}
+        className={cn(
+          "bg-card/80 backdrop-blur-xl border-r flex flex-col z-50 shadow-2xl transition-all duration-300",
+          isMobileView ? "absolute h-full" : "relative"
+        )}
       >
-        <div className="p-8 flex items-center justify-between">
+        <div className="p-8 flex items-center justify-between relative overflow-hidden">
           {isSidebarOpen && (
             <motion.div
               initial={{ opacity: 0, x: -10 }}
@@ -146,7 +158,7 @@ export default function DashboardLayout({
                 <LayoutDashboard size={20} />
               </div>
               <div className="flex flex-col">
-                <span className="font-black text-xl tracking-tighter text-foreground font-heading uppercase leading-none">CSR Portal</span>
+                <span className="font-black text-xl tracking-tighter text-foreground font-heading uppercase leading-none text-slate-900">CSR Portal</span>
                 <span className="text-[9px] font-black tracking-[0.2em] text-muted-foreground/50 uppercase whitespace-nowrap">Central Coalfields</span>
               </div>
             </motion.div>
@@ -244,36 +256,197 @@ export default function DashboardLayout({
       </motion.aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto relative flex flex-col bg-slate-50/50">
-        <header className="h-24 border-b border-border/50 bg-white/60 backdrop-blur-3xl sticky top-0 z-40 flex items-center px-12 justify-between">
-          <div className="flex flex-col">
-            <h1 className="text-3xl font-black capitalize tracking-tighter text-foreground font-heading">{activeTab.replace('-', ' ')}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">CCL CSR Ecosystem</span>
-              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
-              <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">{userRole} PANEL</span>
+      <main className="flex-1 overflow-auto relative flex flex-col bg-slate-50/50 transition-all">
+        <header className={cn(
+          "border-b border-border/50 bg-white/60 backdrop-blur-3xl sticky top-0 z-40 flex items-center justify-between transition-all",
+          isMobileView ? "h-20 px-6" : "h-24 px-12"
+        )}>
+          <div className="flex items-center gap-4">
+            {isMobileView && !isAppDrawerOpen && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsSidebarOpen(true)}
+                className="w-10 h-10 rounded-xl"
+              >
+                <Menu size={20} />
+              </Button>
+            )}
+            <div className="flex flex-col">
+              <h1 className={cn(
+                "font-black capitalize tracking-tighter text-slate-900 font-heading leading-tight",
+                isMobileView ? "text-xl" : "text-3xl"
+              )}>{activeTab.replace('-', ' ')}</h1>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em]">CCL CSR</span>
+                {!isMobileView && (
+                  <>
+                    <div className="w-1 h-1 bg-muted-foreground/30 rounded-full" />
+                    <span className="text-[9px] font-bold text-primary uppercase tracking-[0.2em]">{userRole} PANEL</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-              <div className="flex flex-col">
-                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">System Status</span>
-                <span className="text-[10px] font-bold text-emerald-800/60 uppercase tracking-tighter">Verified & Optimal</span>
+          <div className="flex items-center gap-4 lg:gap-8">
+            {!isMobileView && (
+              <div className="hidden lg:flex items-center gap-3 px-4 py-2 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest leading-none">System Status</span>
+                  <span className="text-[10px] font-bold text-emerald-800/60 uppercase tracking-tighter">Verified & Optimal</span>
+                </div>
               </div>
-            </div>
-            <div className="text-right hidden sm:block border-l border-border/50 pl-8">
-              <p className="text-sm font-black text-foreground font-heading tracking-tight">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <div className="flex items-center justify-end gap-2 mt-0.5">
-                <Globe size={10} className="text-muted-foreground" />
-                <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.1em]">Ranchi, JH, India</p>
-              </div>
+            )}
+            <div className="text-right border-l border-border/50 pl-4 lg:pl-8">
+              <p className={cn(
+                "font-black text-slate-900 font-heading tracking-tight",
+                isMobileView ? "text-[10px]" : "text-sm"
+              )}>
+                {new Date().toLocaleDateString('en-IN', { weekday: isMobileView ? 'short' : 'long', day: 'numeric', month: isMobileView ? 'short' : 'long' })}
+              </p>
+              {!isMobileView && (
+                <div className="flex items-center justify-end gap-2 mt-0.5">
+                  <Globe size={10} className="text-muted-foreground" />
+                  <p className="text-[9px] font-black text-muted-foreground/50 uppercase tracking-[0.1em]">Ranchi, JH, India</p>
+                </div>
+              )}
             </div>
           </div>
         </header>
-        <div className="p-12 max-w-7xl mx-auto w-full flex-1">
+
+        <div className={cn(
+          "mx-auto w-full flex-1",
+          isMobileView ? "p-6 pb-24" : "p-12 max-w-7xl"
+        )}>
           {children}
         </div>
+
+        {/* --- MOBLIE SIMULATION EXCLUSIVE: BOTTOM NAV --- */}
+        <AnimatePresence>
+          {isMobileView && (
+            <motion.nav 
+              initial={{ y: 100 }}
+              animate={{ y: 0 }}
+              exit={{ y: 100 }}
+              className="fixed bottom-0 left-0 right-0 h-20 bg-white/80 backdrop-blur-3xl border-t border-border/50 px-6 flex items-center justify-between z-[100] safe-area-bottom"
+            >
+              {[
+                { id: 'home', icon: LayoutDashboard, label: 'Home' },
+                { id: 'projects', icon: Briefcase, label: 'Projects' },
+                { id: 'gis', icon: MapIcon, label: 'Maps' },
+                { id: 'budget', icon: Wallet, label: 'Fiscal' },
+                { id: 'drawer', icon: Grid2X2, label: 'More' }
+              ].map((item) => {
+                const isSelected = activeTab === item.id || (item.id === 'drawer' && isAppDrawerOpen);
+                const isDrawer = item.id === 'drawer';
+                
+                const Icon = item.icon as any;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      if (isDrawer) setIsAppDrawerOpen(!isAppDrawerOpen);
+                      else {
+                        setActiveTab(item.id);
+                        setIsAppDrawerOpen(false);
+                      }
+                    }}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 transition-all w-14",
+                      isSelected ? "text-primary" : "text-muted-foreground/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                      isSelected ? "bg-primary/10" : ""
+                    )}>
+                      <Icon size={22} className={cn(isSelected && "scale-110")} />
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest">{item.label}</span>
+                  </button>
+                );
+              })}
+            </motion.nav>
+          )}
+        </AnimatePresence>
+
+        {/* --- APP DRAWER (MOBILE ADVANCED) --- */}
+        <AnimatePresence>
+          {isAppDrawerOpen && isMobileView && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsAppDrawerOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110]"
+              />
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-[120] max-h-[85vh] overflow-hidden flex flex-col shadow-2xl safe-area-bottom"
+              >
+                <div className="h-2 w-16 bg-muted rounded-full mx-auto mt-6 mb-8" />
+                
+                <div className="flex-1 overflow-y-auto px-10 pb-32 no-scrollbar">
+                   <div className="space-y-12">
+                      {navSections.map(section => {
+                         let filteredItems = section.items.filter(item => !item.adminOnly || userRole === 'ADMIN');
+                         if (userRole === 'NGO' && section.title !== 'NGO') return null;
+                         if (filteredItems.length === 0) return null;
+
+                         return (
+                           <div key={section.title} className="space-y-6">
+                              <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/30">{section.title}</h4>
+                              <div className="grid grid-cols-3 gap-6">
+                                 {filteredItems.map(item => (
+                                   <button
+                                     key={item.id}
+                                     onClick={() => {
+                                       setActiveTab(item.id);
+                                       setIsAppDrawerOpen(false);
+                                     }}
+                                     className={cn(
+                                       "flex flex-col items-center gap-3 p-4 rounded-3xl transition-all",
+                                       activeTab === item.id ? "bg-primary/10 text-primary shadow-inner" : "active:bg-muted"
+                                     )}
+                                   >
+                                      <div className={cn(
+                                        "w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm",
+                                        activeTab === item.id ? "bg-primary text-white" : "bg-slate-50 text-slate-400 group-hover:text-primary"
+                                      )}>
+                                         <item.icon size={24} />
+                                      </div>
+                                      <span className="text-[9px] font-bold text-center leading-tight uppercase tracking-tighter">
+                                        {item.label}
+                                      </span>
+                                   </button>
+                                 ))}
+                              </div>
+                           </div>
+                         );
+                      })}
+                   </div>
+
+                   <div className="mt-16 pt-10 border-t border-border/50">
+                      <Button
+                        variant="ghost"
+                        onClick={onLogout}
+                        className="w-full h-16 rounded-[2rem] justify-center gap-3 text-destructive border-2 border-destructive/10 hover:bg-destructive/10 font-black uppercase tracking-widest text-xs"
+                      >
+                        <LogOut size={18} />
+                        Logout Session
+                      </Button>
+                   </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

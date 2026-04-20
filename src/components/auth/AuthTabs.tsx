@@ -10,7 +10,10 @@ import { useNavigate } from 'react-router-dom';
 import CCLRegistrationForm from './CCLRegistrationForm';
 import LoginForm from './LoginForm';
 
-export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (code: string) => void }) {
+export default function AuthTabs({ onSuperAdminLogin, initialTab = 'employee' }: { 
+  onSuperAdminLogin: (code: string) => void;
+  initialTab?: 'employee' | 'ngo' | 'admin';
+}) {
   const navigate = useNavigate();
   const [adminCode, setAdminCode] = React.useState('');
   const SUPER_ADMIN_CODE = "G56AW0912PL";
@@ -26,134 +29,93 @@ export default function AuthTabs({ onSuperAdminLogin }: { onSuperAdminLogin: (co
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
-      <Tabs defaultValue="employee" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8 h-14 p-1 bg-muted/50 rounded-2xl">
-          <TabsTrigger 
-            value="employee" 
-            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-2"
-          >
-            <User size={16} />
-            Employee
-          </TabsTrigger>
-          <TabsTrigger 
-            value="ngo" 
-            className="rounded-xl data-[state=active]:bg-background data-[state=active]:shadow-sm flex items-center gap-2"
-          >
-            <Building2 size={16} />
-            NGO
-          </TabsTrigger>
-          <TabsTrigger 
-            value="admin" 
-            className="rounded-xl data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center gap-2"
-          >
-            <ShieldCheck size={16} />
-            Super Admin
-          </TabsTrigger>
+    <div className="w-full">
+      <Tabs defaultValue={initialTab} value={initialTab} className="w-full">
+        {/* We hide the TabsList as navigation is handled by the parent LoginPage persona selection */}
+        <TabsList className="hidden">
+          <TabsTrigger value="employee">Employee</TabsTrigger>
+          <TabsTrigger value="ngo">NGO</TabsTrigger>
+          <TabsTrigger value="admin">Admin</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="employee">
+        <TabsContent value="employee" className="mt-0 outline-none">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-transparent">
-              <TabsTrigger value="login" className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none bg-transparent shadow-none">Login</TabsTrigger>
-              <TabsTrigger value="register" className="border-b-2 border-transparent data-[state=active]:border-primary rounded-none bg-transparent shadow-none">Register</TabsTrigger>
-            </TabsList>
+            <div className="flex bg-slate-100 p-1 rounded-2xl mb-8">
+              <TabsList className="grid w-full grid-cols-2 bg-transparent h-12">
+                <TabsTrigger 
+                  value="login" 
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all"
+                >
+                  Login
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all"
+                >
+                  Register
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="login">
-              <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-black tracking-tight">Employee Login</CardTitle>
-                  <CardDescription>
-                    Enter your credentials to access the CSR portal
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <LoginForm />
-                </CardContent>
-              </Card>
+            <TabsContent value="login" className="mt-0 outline-none">
+              <div className="space-y-6">
+                <LoginForm />
+              </div>
             </TabsContent>
             
-            <TabsContent value="register">
-              <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-black tracking-tight">Employee Registration</CardTitle>
-                  <CardDescription>
-                    Register as a Central Coalfields Limited employee
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CCLRegistrationForm />
-                </CardContent>
-              </Card>
+            <TabsContent value="register" className="mt-0 outline-none">
+              <div className="space-y-6">
+                <CCLRegistrationForm />
+              </div>
             </TabsContent>
           </Tabs>
         </TabsContent>
 
-        <TabsContent value="ngo">
-          <Card className="border-none shadow-2xl bg-card/50 backdrop-blur-xl">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-black tracking-tight">NGO Partner Login</CardTitle>
-              <CardDescription>
-                Access your designated dashboard and project tools
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LoginForm isNGO />
-              <div className="mt-6 pt-6 border-t border-border/50 text-center space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    NGO registration is strictly by invitation link only.
-                  </p>
-                  <p className="text-[10px] mt-2 font-bold uppercase text-primary/60">
-                    Contact CSR Department for access links
-                  </p>
-                </div>
-                
-                <div className="pt-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/register-ngo')} 
-                    className="text-xs font-bold uppercase tracking-widest h-10 w-full rounded-xl border-dashed border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-                  >
-                    Redeem Invitation Code
-                  </Button>
-                </div>
+        <TabsContent value="ngo" className="mt-0 outline-none">
+          <div className="space-y-8">
+            <LoginForm isNGO />
+            <div className="pt-8 border-t border-slate-100 text-center space-y-6">
+              <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+                <p className="text-[10px] text-emerald-800 font-bold leading-relaxed uppercase tracking-widest">
+                  NGO registration is strictly by <span className="text-emerald-600">invitation link only</span>.
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/register-ngo')} 
+                className="text-[10px] font-black uppercase tracking-[0.2em] h-14 w-full rounded-2xl border-slate-200 bg-white text-slate-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all"
+              >
+                Redeem Invitation Code
+              </Button>
+            </div>
+          </div>
         </TabsContent>
         
-        <TabsContent value="admin">
-          <Card className="border-2 border-primary/20 shadow-2xl bg-card/50 backdrop-blur-xl overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full -mr-16 -mt-16 blur-2xl" />
-            <CardHeader className="space-y-1 relative">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-2">
-                <KeyRound size={24} />
+        <TabsContent value="admin" className="mt-0 outline-none">
+          <div className="space-y-8 relative">
+            <form onSubmit={handleAdminSubmit} className="space-y-8">
+              <div className="space-y-3">
+                <Label htmlFor="admin-code" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Authorization Code</Label>
+                <Input 
+                  id="admin-code" 
+                  type="password" 
+                  value={adminCode}
+                  onChange={(e) => setAdminCode(e.target.value)}
+                  placeholder="••••••••" 
+                  className="h-20 bg-slate-50 border-slate-200 text-slate-900 rounded-2xl text-center font-mono tracking-[1em] text-2xl focus:border-primary/50 transition-all placeholder:text-slate-200"
+                />
               </div>
-              <CardTitle className="text-2xl font-black tracking-tight">Super Admin Access</CardTitle>
-              <CardDescription>
-                Enter the special authorization code for direct system access
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="relative">
-              <form onSubmit={handleAdminSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="admin-code">Authorization Code</Label>
-                  <Input 
-                    id="admin-code" 
-                    type="password" 
-                    value={adminCode}
-                    onChange={(e) => setAdminCode(e.target.value)}
-                    placeholder="Enter special code" 
-                    className="h-12 text-center font-mono tracking-[0.5em] text-lg"
-                  />
-                </div>
-                <Button type="submit" className="w-full h-12 font-bold text-sm uppercase tracking-widest">
-                  Verify & Login
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+              <Button type="submit" className="w-full h-16 font-black text-xs uppercase tracking-[0.3em] rounded-2xl shadow-xl shadow-slate-200">
+                Verify Identity
+              </Button>
+            </form>
+            <div className="text-center">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                Unauthorized access attempts are monitored for security compliance.
+              </p>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
